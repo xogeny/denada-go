@@ -23,6 +23,8 @@ import (
 
 %union {
     identifier string
+	string     string
+	bool       bool
 	item interface{}
 }
 
@@ -31,10 +33,10 @@ import (
 %token	NUMBER
 %token	STRING
 
-%type <item> BOOLEAN
+%type <bool> BOOLEAN
 %type <item> IDENTIFIER
 %type <item> NUMBER
-%type <item> STRING
+%type <string> STRING
 
 %type	<item> 	/*TODO real type(s), if/where applicable */
 	Declaration
@@ -132,7 +134,6 @@ type (
 	Declaration2 interface{}
 	Definition interface{}
 	Definition1 interface{}
-	Expr interface{}
 	File interface{}
 	File1 interface{}
 	File11 interface{}
@@ -146,7 +147,7 @@ type (
 	QualifiersAndId1 interface{}
 	Start interface{}
 )
-	
+
 func _dump() {
 	s := fmt.Sprintf("%#v", _parserResult)
 	s = strings.Replace(s, "%", "%%", -1)
