@@ -1,4 +1,5 @@
-parser.go
+denada_parser.go
+denada_scanner.go
 y.output
 denada.y
 denada.l
