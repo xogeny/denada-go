@@ -1,14 +1,25 @@
 // Lexical rules
 identifier = .
+string = .
+number = .
+boolean = "true" | "false" .
 
 // Grammar
 
-File = { Definition | Declaration | Assignment } .
+File = { Definition | Declaration } .
 
 QualifiersAndId = identifier { identifier } .
 
-Definition = QualifiersAndId "{" File "}".
+Expr = string | number | boolean .
 
-Declaration = QualifiersAndId ";" .
+Modification = identifier "=" Expr . 
 
-Assignment = identifier "=" identifier ";" .
+Modifiers = "(" [ Modification { "," Modification } ] ")" .
+
+Preface = QualifiersAndId Modifiers string .
+
+Definition = Preface "{" File "}" .
+
+Declaration = Preface [ Ending ] ";" . 
+
+Ending = [ "=" Expr ] string . 
