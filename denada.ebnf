@@ -8,7 +8,11 @@ boolean = "true" | "false" .
 
 File = { Definition | Declaration } .
 
-QualifiersAndId = identifier { identifier } .
+Definition = Preface [ string ] "{" File "}" .
+
+Declaration = Preface [ "=" Expr ] [ string ] ";" . 
+
+QualifiersAndId = { identifier } identifier .
 
 Expr = string | number | boolean .
 
@@ -16,10 +20,5 @@ Modification = identifier "=" Expr .
 
 Modifiers = "(" [ Modification { "," Modification } ] ")" .
 
-Preface = QualifiersAndId Modifiers string .
+Preface = QualifiersAndId [ Modifiers ] .
 
-Definition = Preface "{" File "}" .
-
-Declaration = Preface [ Ending ] ";" . 
-
-Ending = [ "=" Expr ] string . 
