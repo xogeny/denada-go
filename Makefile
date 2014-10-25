@@ -12,9 +12,9 @@ denada_parser.go: denada.y
 	go tool yacc -v y.output -o $@ $<
 	go fmt $@
 
-denada.y: denada.ebnf
-	ebnf2y -pkg denada -start File -M -o denada.y denada.ebnf
-	-rm y.go
+#denada.y: denada.ebnf
+#	ebnf2y -pkg denada -start File -M -o denada.y denada.ebnf
+#	-rm y.go
 
 clean:
-	-rm y.go y.output denada.y denada_parser.go denada_scanner.go
+	-rm y.go y.output denada_parser.go denada_scanner.go
