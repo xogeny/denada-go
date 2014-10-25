@@ -1,9 +1,11 @@
-package main
+package denada
 
-import "fmt"
-import "strings"
+import "io"
 
-func (d Denada) String() string {
-	ids := strings.Join(d.Ids, ",");
-	return fmt.Sprintf("(Denada Ids:%s (%d))", ids, len(d.Ids));
+// This file contains the API for the denada parser
+
+func Parse(r io.Reader) error {
+	lex := NewLexer(r)
+	_ = yyParse(lex)
+	return nil
 }

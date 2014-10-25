@@ -7,6 +7,6 @@ which meant doing:
 ```
 $ go get github.com/cznic/ebnf2y
 $ go get github.com/cznic/golex
+$ go get github.com/blynn/nex
 ```
-
 
