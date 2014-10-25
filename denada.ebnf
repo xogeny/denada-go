@@ -1,0 +1,14 @@
+// Lexical rules
+identifier = .
+
+// Grammar
+
+File = { Definition | Declaration | Assignment } .
+
+QualifiersAndId = identifier { identifier } .
+
+Definition = QualifiersAndId "{" File "}".
+
+Declaration = QualifiersAndId ";" .
+
+Assignment = identifier "=" identifier ";" .

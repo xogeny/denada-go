@@ -1,1 +1,4 @@
-denada.peg.go
+parser.go
+y.output
+denada.y
+denada.l
