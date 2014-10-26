@@ -34,6 +34,9 @@ func Test1(t *testing.T) {
 		IsEqual(1, len(elems))
 		elem := elems[0]
 		log.Printf("Elem = %v", elem)
+		IsTrue(elem.isDeclaration())
+		IsFalse(elem.isDefinition())
+		IsEqual(0, len(elem.Modifications))
 		Resembles(elem.Qualifiers, []string{"set"})
 		IsEqual(elem.Name, "x")
 		Resembles(elem.Value, 5)
