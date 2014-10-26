@@ -15,6 +15,7 @@ type Element struct {
 	/* For declarations */
 	Value interface{}
 
+	rule       string
 	definition bool
 }
 
@@ -34,6 +35,10 @@ func (e Element) String() string {
 			return fmt.Sprintf("%s;", ret)
 		}
 	}
+}
+
+func (e Element) Rule() string {
+	return e.rule
 }
 
 func (e Element) isDefinition() bool {

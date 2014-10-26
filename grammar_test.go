@@ -32,5 +32,5 @@ func Test_Grammar(t *testing.T) {
 	Expect(ges).To(Equal([]error{}))
 
 	errs := Check(il, gl)
-	Expect(len(errs)).To(Equal(0))
+	Expect(errs).To(Equal([]error{}))
 }
