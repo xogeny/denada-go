@@ -23,9 +23,13 @@ import (
 
 %union {
     identifier string
+    bool       bool
+    number     interface{}
 	string     string
-	bool       bool
-	item interface{}
+	elements   []Element
+	element    Element
+    expr       interface{}
+    dict       map[string]interface{}
 }
 
 %token	BOOLEAN
@@ -33,120 +37,132 @@ import (
 %token	NUMBER
 %token	STRING
 
+// Tokens
 %type <bool> BOOLEAN
-%type <item> IDENTIFIER
-%type <item> NUMBER
+%type <string> IDENTIFIER
+%type <number> NUMBER
 %type <string> STRING
 
-%type	<item> 	/*TODO real type(s), if/where applicable */
-	Declaration
-	Declaration2
-	Definition
-	Definition1
-	Expr
-	File
-	File1
-	File11
-	Modification
-	Modifiers
-	Modifiers1
-	Modifiers11
-	Preface
-	Preface1
-	QualifiersAndId
-	QualifiersAndId1
-	Start
+// Rules
+%type <expr> Expr
+
+%type <string> Description
+
+%type <element> Elem
+%type <element> Declaration
+%type <element> Definition
+%type <element> Preface
+%type <element> QualifiersAndId QualifiersAndId1
+
+%type <elements> File File1
+%type <elements> Start
+
+%type <dict> Modification Modifiers Modifiers1 Modifiers11 PrefaceModifiers
 
 %start Start
 
 %%
 
 Declaration
-: Preface Declaration2 ';' { $$ = []Declaration{$1, $2, ";"} /* TODO 1 */ }
-| Preface '=' Expr Declaration2 ';' { $$ = []Declaration{$1, "=", $3, $4, ";"} /* TODO 2 */	}
+: Preface Description ';' {
+  $$ = $1;
+  $$.Description = $2;
+}
+| Preface '=' Expr Description ';' {
+  $$ = $1;
+  $$.Value = $3;
+  $$.Description = $4;
+}
 
-Declaration2
-: /* EMPTY */ { $$ = nil /* TODO 3 */ }
-| STRING { $$ = $1  /* TODO 4 */	}
+Description
+: /* EMPTY */ { $$ = "" }
+| STRING { $$ = $1 }
 
 Definition
-: Preface Definition1 '{' File '}' { $$ = []Definition{$1, $2, "{", $4, "}"} /* TODO 5 */ }
-
-Definition1
-: /* EMPTY */ {	$$ = nil /* TODO 6 */ }
-| STRING { $$ = $1 /* TODO 7 */	}
+: Preface Description '{' File '}' {
+  $$ = $1;
+  $$.Description = $2;
+  $$.Contents = $4;
+}
 
 Expr
-: STRING { $$ = $1 /* TODO 8 */ }
-| NUMBER { $$ = $1 /* TODO 9 */ }
-| BOOLEAN { $$ = $1 /* TODO 10 */ }
+: STRING { $$ = $1 }
+| NUMBER { $$ = $1 }
+| BOOLEAN { $$ = $1 }
 
 File
-: File1 { $$ = $1 /* TODO 11 */ }
+: File1 { $$ = $1 }
 
 File1
-: /* EMPTY */ {	$$ = []File1(nil) /* TODO 12 */ }
-| File1 File11 { $$ = append($1.([]File1), $2) /* TODO 13 */ }
+: /* EMPTY */ {	$$ = []Element{} }
+| File1 Elem {
+  $$ = append($1, $2);
+}
 
-File11
-: Definition { $$ = $1 /* TODO 14 */ }
-| Declaration {	$$ = $1 /* TODO 15 */ }
+Elem
+: Definition { $$ = $1 }
+| Declaration {	$$ = $1 }
 
 Modification
-: IDENTIFIER '=' Expr { $$ = []Modification{$1, "=", $3} /* TODO 16 */ }
+: IDENTIFIER '=' Expr {
+  $$ = map[string]interface{}{};
+  $$[$1] = $3;
+}
 
 Modifiers
-: '(' Modifiers1 ')' { $$ = []Modifiers{"(", $2, ")"} /* TODO 17 */ }
+: '(' Modifiers1 ')' {
+  $$ = $2;
+}
 
 Modifiers1
-: /* EMPTY */ {	$$ = nil /* TODO 18 */ }
-| Modification Modifiers11 { $$ = []Modifiers1{$1, $2} /* TODO 19 */ }
+: /* EMPTY */ {	$$ = map[string]interface{}{} }
+| Modification Modifiers11 {
+  $$ = $2;
+  for k, v := range($1) {
+	  $$[k] = v;
+  }
+}
 
 Modifiers11
-: /* EMPTY */ {	$$ = []Modifiers11(nil) /* TODO 20 */ }
-| Modifiers11 ',' Modification { $$ = append($1.([]Modifiers11), ",", $3) /* TODO 21 */ }
+: /* EMPTY */ {	$$ = map[string]interface{}{} }
+| Modifiers11 ',' Modification {
+  $$ = $1;
+  for k, v := range($3) {
+	  $$[k] = v;
+  }
+}
 
 Preface
-: QualifiersAndId Preface1 { $$ = []Preface{$1, $2} /* TODO 22 */ }
+: QualifiersAndId PrefaceModifiers {
+  $$ = $1;
+  $1.Modifications = $2;
+}
 
-Preface1
-: /* EMPTY */ {	$$ = nil /* TODO 23 */ }
-| Modifiers	{ $$ = $1 /* TODO 24 */ }
+PrefaceModifiers
+: /* EMPTY */ {	$$ = map[string]interface{}{} }
+| Modifiers	{ $$ = $1 }
 
 QualifiersAndId
-: QualifiersAndId1 IDENTIFIER {	$$ = []QualifiersAndId{$1, $2} /* TODO 25 */ }
+: QualifiersAndId1 IDENTIFIER {
+  $1.Qualifiers = append($1.Qualifiers, $2);
+  $$ = $1;
+}
 
 QualifiersAndId1
-: /* EMPTY */ {	$$ = []QualifiersAndId1(nil) /* TODO 26 */ }
-| QualifiersAndId1 IDENTIFIER { $$ = append($1.([]QualifiersAndId1), $2) /* TODO 27 */ }
+: /* EMPTY */ {	$$ = Element{} }
+| QualifiersAndId1 IDENTIFIER {
+  $1.Qualifiers = append($1.Qualifiers, $2);
+  $$ = $1;
+}
 
 Start
-: File { _parserResult = $1 /* TODO 28 */ }
+: File {
+  _parserResult = $1;
+}
 
 %%
 
-//TODO remove demo stuff below
-
 var _parserResult interface{}
-
-type (
-	Declaration interface{}
-	Declaration2 interface{}
-	Definition interface{}
-	Definition1 interface{}
-	File interface{}
-	File1 interface{}
-	File11 interface{}
-	Modification interface{}
-	Modifiers interface{}
-	Modifiers1 interface{}
-	Modifiers11 interface{}
-	Preface interface{}
-	Preface1 interface{}
-	QualifiersAndId interface{}
-	QualifiersAndId1 interface{}
-	Start interface{}
-)
 
 func _dump() {
 	s := fmt.Sprintf("%#v", _parserResult)
@@ -166,5 +182,3 @@ func _dump() {
 		fmt.Println(v)
 	}
 }
-
-// End of demo stuff
