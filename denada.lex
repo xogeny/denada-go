@@ -8,6 +8,8 @@
 /true/            { lval.bool = true; return BOOLEAN; }
 /false/           { lval.bool = false; return BOOLEAN; }
 /[0-9][0-9]*/     { lval.number,_ = strconv.Atoi(yylex.Text()); return NUMBER }
+/'[^']*'/         { lval.identifier = strings.Trim(yylex.Text(), "'"); return IDENTIFIER }
+/"[^"]*"/         { lval.string = strings.Trim(yylex.Text(), "\""); return STRING }
 /[A-Za-z_][A-Za-z_0-9]*/ { lval.identifier = yylex.Text(); return IDENTIFIER; }
 /[ \t\n]+/        { /* eat up whitespace */ }
 /./               { println("Unrecognized character:", yylex.Text()) }
