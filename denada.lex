@@ -32,6 +32,7 @@ func (yylex Lexer) move() {
 			colNumber = 0;
 			lineNumber++;
   	    } else {
+		    // TODO: Need to handle non-printable characters (e.g. \r)
 		    colNumber++;
 		}
 	}
