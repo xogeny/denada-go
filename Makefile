@@ -5,7 +5,7 @@ all: denada_scanner.go denada_parser.go
 #	go fmt $@
 
 denada_scanner.go: denada.lex
-	nex -o $@ $<
+	nex -e -o $@ $<
 	go fmt $@
 
 denada_parser.go: denada.y

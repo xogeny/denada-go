@@ -1,11 +1,16 @@
 package denada
 
 import "io"
+import "fmt"
 
 // This file contains the API for the denada parser
 
-func Parse(r io.Reader) error {
+func Parse(r io.Reader) ([]Element, error) {
 	lex := NewLexer(r)
-	_ = yyParse(lex)
-	return nil
+	ret := yyParse(lex)
+	if ret == 0 {
+		return _parserResult, nil
+	} else {
+		return nil, fmt.Errorf("Parsing error")
+	}
 }

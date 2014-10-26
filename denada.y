@@ -46,7 +46,7 @@ import (
 
 // Tokens
 %type <bool> BOOLEAN
-%type <string> IDENTIFIER
+%type <identifier> IDENTIFIER
 %type <number> NUMBER
 %type <string> STRING
 
@@ -151,14 +151,20 @@ PrefaceModifiers
 
 QualifiersAndId
 : QualifiersAndId1 IDENTIFIER {
-  $1.Qualifiers = append($1.Qualifiers, $2);
+  if $1.Name!="" {
+    $1.Qualifiers = append($1.Qualifiers, $1.Name);
+  }
+  $1.Name = $2;
   $$ = $1;
 }
 
 QualifiersAndId1
 : /* EMPTY */ {	$$ = Element{} }
 | QualifiersAndId1 IDENTIFIER {
-  $1.Qualifiers = append($1.Qualifiers, $2);
+  if $1.Name!="" {
+    $1.Qualifiers = append($1.Qualifiers, $1.Name);
+  }
+  $1.Name = $2;
   $$ = $1;
 }
 
@@ -169,7 +175,7 @@ Start
 
 %%
 
-var _parserResult interface{}
+var _parserResult []Element
 
 func _dump() {
 	s := fmt.Sprintf("%#v", _parserResult)
