@@ -36,6 +36,13 @@ import (
 %token	IDENTIFIER
 %token	NUMBER
 %token	STRING
+%token  SEMI
+%token  LPAREN
+%token  RPAREN
+%token  LBRACE
+%token  RBRACE
+%token  EQUALS
+%token  COMMA
 
 // Tokens
 %type <bool> BOOLEAN
@@ -64,11 +71,11 @@ import (
 %%
 
 Declaration
-: Preface Description ';' {
+: Preface Description SEMI {
   $$ = $1;
   $$.Description = $2;
 }
-| Preface '=' Expr Description ';' {
+| Preface EQUALS Expr Description SEMI {
   $$ = $1;
   $$.Value = $3;
   $$.Description = $4;
@@ -79,7 +86,7 @@ Description
 | STRING { $$ = $1 }
 
 Definition
-: Preface Description '{' File '}' {
+: Preface Description LBRACE File RBRACE {
   $$ = $1;
   $$.Description = $2;
   $$.Contents = $4;
@@ -104,13 +111,13 @@ Elem
 | Declaration {	$$ = $1 }
 
 Modification
-: IDENTIFIER '=' Expr {
+: IDENTIFIER EQUALS Expr {
   $$ = map[string]interface{}{};
   $$[$1] = $3;
 }
 
 Modifiers
-: '(' Modifiers1 ')' {
+: LPAREN Modifiers1 RPAREN {
   $$ = $2;
 }
 
@@ -125,7 +132,7 @@ Modifiers1
 
 Modifiers11
 : /* EMPTY */ {	$$ = map[string]interface{}{} }
-| Modifiers11 ',' Modification {
+| Modifiers11 COMMA Modification {
   $$ = $1;
   for k, v := range($3) {
 	  $$[k] = v;
