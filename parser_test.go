@@ -27,9 +27,10 @@ func Test_SimpleDeclaration(t *testing.T) {
 	RegisterTestingT(t)
 
 	r := strings.NewReader("set x = 5 \"Description\";")
-	elems, err := Parse(r)
+	elems, errs, success := Parse(r)
 
-	Expect(err).To(BeNil())
+	Expect(success).To(BeTrue())
+	Expect(len(errs)).To(Equal(0))
 	Expect(len(elems)).To(Equal(1))
 
 	elem := elems[0]
@@ -44,11 +45,16 @@ func Test_SimpleDeclaration(t *testing.T) {
 	Expect(elem.Value).To(Equal(5))
 }
 
+func Test_Errors(t *testing.T) {
+	RegisterTestingT(t)
+}
+
 func Test_SampleInput(t *testing.T) {
 	RegisterTestingT(t)
+	r := strings.NewReader("set x = 5")
 
-	r := strings.NewReader(sample)
-	elems, err := Parse(r)
-	Expect(err).To(BeNil())
-	Expect(len(elems)).To(Equal(3))
+	_, errs, success := Parse(r)
+	Expect(success).To(BeFalse())
+	Expect(len(errs)).To(Equal(1))
+	Expect(errs[0].Error()).To(Equal("Error syntax error at line 0, column 9"))
 }

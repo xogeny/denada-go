@@ -9,20 +9,23 @@ var errorList []error
 
 func (yylex Lexer) Error(e string) {
 	errorList = append(errorList,
-		fmt.Errorf("Error %s at line %d, column %d", e, yylex.l, yylex.c))
+		fmt.Errorf("Error %s at line %d, column %d", e, lineNumber, colNumber))
 }
 
-func Parse(r io.Reader) (ElementList, error) {
+func Parse(r io.Reader) (ElementList, []error, bool) {
 	errorList = []error{}
+	lineNumber = 0
+	colNumber = 0
+
 	lex := NewLexer(r)
 	ret := yyParse(lex)
 	if ret == 0 {
-		return _parserResult, nil
+		return _parserResult, []error{}, true
 	} else {
-		msg := ""
-		for _, emsg := range errorList {
-			msg = msg + fmt.Sprintf("%v\n", emsg)
+		ret := []error{}
+		for _, msg := range errorList {
+			ret = append(ret, msg)
 		}
-		return nil, fmt.Errorf(msg)
+		return nil, ret, false
 	}
 }

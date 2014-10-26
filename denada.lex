@@ -1,24 +1,41 @@
-/;/               { return SEMI; }
-/\(/              { return LPAREN; }
-/\)/              { return RPAREN; }
-/\{/              { return LBRACE; }
-/\}/              { return RBRACE; }
-/=/               { return EQUALS; }
-/,/               { return COMMA; }
-/true/            { lval.bool = true; return BOOLEAN; }
-/false/           { lval.bool = false; return BOOLEAN; }
-/[0-9][0-9]*/     { lval.number,_ = strconv.Atoi(yylex.Text()); return NUMBER }
-/'[^']*'/         { lval.identifier = strings.Trim(yylex.Text(), "'"); return IDENTIFIER }
-/"[^"]*"/         { lval.string = strings.Trim(yylex.Text(), "\""); return STRING }
-/[A-Za-z_][A-Za-z_0-9]*/ { lval.identifier = yylex.Text(); return IDENTIFIER; }
-/[ \t\n]+/        { /* eat up whitespace */ }
-/./               { println("Unrecognized character:", yylex.Text()) }
-/{[^\{\}\n]*}/    { /* eat up one-line comments */ }
+/;/               { yylex.move(); return SEMI; }
+/\(/              { yylex.move(); return LPAREN; }
+/\)/              { yylex.move(); return RPAREN; }
+/\{/              { yylex.move(); return LBRACE; }
+/\}/              { yylex.move(); return RBRACE; }
+/=/               { yylex.move(); return EQUALS; }
+/,/               { yylex.move(); return COMMA; }
+/true/            { yylex.move(); lval.bool = true; return BOOLEAN; }
+/false/           { yylex.move(); lval.bool = false; return BOOLEAN; }
+/[0-9][0-9]*/     { yylex.move(); lval.number,_ = strconv.Atoi(yylex.Text()); return NUMBER }
+/'[^']*'/         {
+   yylex.move(); lval.identifier = strings.Trim(yylex.Text(), "'"); return IDENTIFIER
+}
+/"[^"]*"/         { yylex.move(); lval.string = strings.Trim(yylex.Text(), "\""); return STRING }
+/[A-Za-z_][A-Za-z_0-9]*/ { yylex.move(); lval.identifier = yylex.Text(); return IDENTIFIER; }
+/[ \t]+/          { yylex.move(); /* eat up whitespace */ }
+/[\n]+/           { yylex.move(); }
+/./               { yylex.move(); println("Unrecognized character:", yylex.Text()) }
+/{[^\{\}\n]*}/    { yylex.move(); /* eat up one-line comments */ }
 //
 package denada
 
 import "fmt"
 import "strconv"
+
+var lineNumber int;
+var colNumber int;
+
+func (yylex Lexer) move() {
+    for _, c := range(yylex.Text()) {
+		if c=='\n' {
+			colNumber = 0;
+			lineNumber++;
+  	    } else {
+		    colNumber++;
+		}
+	}
+}
 
 func ystream(r io.Reader) {
   lexer := NewLexer(r);
