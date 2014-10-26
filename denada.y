@@ -96,6 +96,7 @@ Expr
 : STRING { $$ = $1 }
 | NUMBER { $$ = $1 }
 | BOOLEAN { $$ = $1 }
+| IDENTIFIER { $$ = $1 }
 
 File
 : File1 { $$ = $1 }

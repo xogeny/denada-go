@@ -2,6 +2,7 @@ package denada
 
 import "io"
 import "fmt"
+import "strings"
 
 // This file contains the API for the denada parser
 
@@ -10,6 +11,11 @@ var errorList []error
 func (yylex Lexer) Error(e string) {
 	errorList = append(errorList,
 		fmt.Errorf("Error %s at line %d, column %d", e, lineNumber, colNumber))
+}
+
+func ParseString(s string) (ElementList, []error, bool) {
+	r := strings.NewReader(s)
+	return Parse(r)
 }
 
 func Parse(r io.Reader) (ElementList, []error, bool) {

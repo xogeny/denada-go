@@ -18,6 +18,24 @@ type Element struct {
 	definition bool
 }
 
+func (e Element) String() string {
+	ret := ""
+	for _, q := range e.Qualifiers {
+		ret += q + " "
+	}
+	ret += e.Name
+
+	if e.isDefinition() {
+		return fmt.Sprintf("%s { ... }", ret)
+	} else {
+		if e.Value != nil {
+			return fmt.Sprintf("%s = %v;", ret, e.Value)
+		} else {
+			return fmt.Sprintf("%s;", ret)
+		}
+	}
+}
+
 func (e Element) isDefinition() bool {
 	return e.definition
 }
