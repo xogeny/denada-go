@@ -14,7 +14,7 @@ Declaration = Preface [ "=" Expr ] [ string ] ";" .
 
 QualifiersAndId = { identifier } identifier .
 
-Expr = string | number | boolean .
+Expr = string | number | boolean | identifier .
 
 Modification = identifier "=" Expr . 
 
