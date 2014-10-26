@@ -17,13 +17,8 @@
 //
 package denada
 
-import "log"
 import "fmt"
 import "strconv"
-
-func (yylex Lexer) Error(e string) {
-  log.Printf("Error %s at line %d, column %d", e, yylex.l, yylex.c)
-}
 
 func ystream(r io.Reader) {
   lexer := NewLexer(r);
