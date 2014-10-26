@@ -26,7 +26,7 @@ import (
     bool       bool
     number     interface{}
 	string     string
-	elements   []Element
+	elements   ElementList
 	element    Element
     expr       interface{}
     dict       map[string]interface{}
@@ -101,7 +101,7 @@ File
 : File1 { $$ = $1 }
 
 File1
-: /* EMPTY */ {	$$ = []Element{} }
+: /* EMPTY */ {	$$ = MakeElementList() }
 | File1 Elem {
   $$ = append($1, $2);
 }
@@ -175,7 +175,7 @@ Start
 
 %%
 
-var _parserResult []Element
+var _parserResult ElementList
 
 func _dump() {
 	s := fmt.Sprintf("%#v", _parserResult)

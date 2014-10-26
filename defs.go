@@ -1,5 +1,7 @@
 package denada
 
+import "fmt"
+
 type Element struct {
 	/* Common to all elements */
 	Qualifiers    []string
@@ -8,7 +10,7 @@ type Element struct {
 	Modifications map[string]interface{}
 
 	/* For definitions */
-	Contents []Element
+	Contents ElementList
 
 	/* For declarations */
 	Value interface{}
@@ -22,4 +24,19 @@ func (e Element) isDefinition() bool {
 
 func (e Element) isDeclaration() bool {
 	return !e.definition
+}
+
+type ElementList []Element
+
+func (e ElementList) Definition(name string) (Element, error) {
+	for _, d := range e {
+		if d.isDefinition() && d.Name == name {
+			return d, nil
+		}
+	}
+	return Element{}, fmt.Errorf("Unable to find definition for %s")
+}
+
+func MakeElementList() ElementList {
+	return ElementList{}
 }

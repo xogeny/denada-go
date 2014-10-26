@@ -5,7 +5,7 @@ import "fmt"
 
 // This file contains the API for the denada parser
 
-func Parse(r io.Reader) ([]Element, error) {
+func Parse(r io.Reader) (ElementList, error) {
 	lex := NewLexer(r)
 	ret := yyParse(lex)
 	if ret == 0 {
