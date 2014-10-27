@@ -4,7 +4,11 @@ import "fmt"
 import "regexp"
 import "log"
 
-func Check(input ElementList, grammar ElementList) []error {
+func Check(input ElementList, grammar ElementList) error {
+	return CheckContents(input, grammar)
+}
+
+func CheckContents(input ElementList, grammar ElementList) error {
 	// Create a list of errors for this context
 	ret := []error{}
 
@@ -34,7 +38,11 @@ func Check(input ElementList, grammar ElementList) []error {
 		// Now, loop over all the actual input elements and see if they match
 		// any of the rules
 		for _, in := range input {
-			ematch := matchElement(in, g)
+			context := g.Contents
+			if rule.Recursive {
+				context = grammar
+			}
+			ematch := matchElement(in, g, context)
 			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
@@ -68,7 +76,18 @@ func Check(input ElementList, grammar ElementList) []error {
 			// If not, add an error
 			msg := fmt.Sprintf("Element %s didn't match any rule: ", in.String())
 			for _, g := range grammar {
-				ematch := matchElement(in, g)
+				// Parse the rule information from the description
+				rule, err := ParseRule(g.Description)
+				if err != nil {
+					continue
+				}
+
+				context := g.Contents
+				if rule.Recursive {
+					context = grammar
+				}
+
+				ematch := matchElement(in, g, context)
 				if ematch != nil {
 					msg = fmt.Sprintf("%s\n  %s: %s", msg, g.Name, ematch.Error())
 				} else {
@@ -80,7 +99,11 @@ func Check(input ElementList, grammar ElementList) []error {
 	}
 
 	// Return any errors that were found in this context
-	return ret
+	if len(ret) == 0 {
+		return nil
+	} else {
+		return listToError(ret)
+	}
 }
 
 func matchString(input string, grammar string) bool {
@@ -193,7 +216,7 @@ func matchExpr(input Expr, grammar Expr) bool {
 	return true
 }
 
-func matchElement(input *Element, grammar *Element) error {
+func matchElement(input *Element, grammar *Element, context ElementList) error {
 	// Check if the names match
 	matched := matchString(input.Name, grammar.Name)
 
@@ -209,10 +232,10 @@ func matchElement(input *Element, grammar *Element) error {
 			// If the input is a definition but the grammar is a declaration, no match
 			return fmt.Errorf("Element type mismatch")
 		}
-		cerrors := Check(input.Contents, grammar.Contents)
-		if len(cerrors) > 0 {
+		cerr := CheckContents(input.Contents, context)
+		if cerr != nil {
 			// If the contents of input don't match the contents of grammar, no match
-			return fmt.Errorf("Content mismatch: %v", cerrors)
+			return fmt.Errorf("Content mismatch: %v", cerr)
 		}
 	} else {
 		if grammar.isDefinition() {

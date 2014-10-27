@@ -1,6 +1,5 @@
 package denada
 
-import "log"
 import "testing"
 import . "github.com/onsi/gomega"
 
@@ -68,8 +67,7 @@ func Test_QualifierMatch(t *testing.T) {
 	il := ElementList{&i}
 
 	ml := Check(il, gl)
-	log.Printf("ml: %v", ml)
-	Expect(len(ml)).To(Equal(1))
+	Expect(ml).ToNot(BeNil())
 }
 
 func Test_StringMatch(t *testing.T) {
@@ -93,26 +91,30 @@ func Test_StringMatch(t *testing.T) {
 func Test_Grammar(t *testing.T) {
 	RegisterTestingT(t)
 
-	gl, ges, gs := ParseString(config_grammar)
-	Expect(gs).To(BeTrue())
-	Expect(ges).To(Equal([]error{}))
+	gl, ge := ParseString(config_grammar)
+	Expect(ge).To(BeNil())
 
-	il, ies, is := ParseString(config_input1)
-	Expect(is).To(BeTrue())
-	Expect(ies).To(Equal([]error{}))
+	il, ie := ParseString(config_input1)
+	Expect(ie).To(BeNil())
 
-	errs := Check(il, gl)
-	Expect(errs).To(Equal([]error{}))
+	err := Check(il, gl)
+	Expect(err).To(BeNil())
 
-	e1, _, e1s := ParseString(config_err1)
-	Expect(e1s).To(BeTrue())
-	Expect(len(Check(e1, gl))).ToNot(Equal(0))
+	e1, e1e := ParseString(config_err1)
+	Expect(e1e).To(BeNil())
 
-	e2, _, e2s := ParseString(config_err2)
-	Expect(e2s).To(BeTrue())
-	Expect(len(Check(e2, gl))).ToNot(Equal(0))
+	err = Check(e1, gl)
+	Expect(err).ToNot(BeNil())
 
-	e3, _, e3s := ParseString(config_err3)
-	Expect(e3s).To(BeTrue())
-	Expect(len(Check(e3, gl))).ToNot(Equal(0))
+	e2, e2e := ParseString(config_err2)
+	Expect(e2e).To(BeNil())
+
+	err = Check(e2, gl)
+	Expect(err).ToNot(BeNil())
+
+	e3, e3e := ParseString(config_err3)
+	Expect(e3e).To(BeNil())
+
+	err = Check(e3, gl)
+	Expect(err).ToNot(BeNil())
 }
