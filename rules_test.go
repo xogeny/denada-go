@@ -6,8 +6,7 @@ import . "github.com/onsi/gomega"
 func TestSingularRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	e := Element{Name: "_", Description: "singleton"}
-	info, err := ParseRule(e)
+	info, err := ParseRule("singleton")
 	Expect(err).To(BeNil())
 	Expect(info.Recursive).To(BeFalse())
 	Expect(info.Name).To(Equal("singleton"))
@@ -17,8 +16,7 @@ func TestSingularRule(t *testing.T) {
 func TestOptionalRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	e := Element{Name: "_", Description: "optional?"}
-	info, err := ParseRule(e)
+	info, err := ParseRule("optional?")
 	Expect(err).To(BeNil())
 	Expect(info.Recursive).To(BeFalse())
 	Expect(info.Name).To(Equal("optional"))
@@ -28,8 +26,7 @@ func TestOptionalRule(t *testing.T) {
 func TestZoMRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	e := Element{Name: "_", Description: "zom*"}
-	info, err := ParseRule(e)
+	info, err := ParseRule("zom*")
 	Expect(err).To(BeNil())
 	Expect(info.Recursive).To(BeFalse())
 	Expect(info.Name).To(Equal("zom"))
@@ -39,8 +36,7 @@ func TestZoMRule(t *testing.T) {
 func TestOoMRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	e := Element{Name: "_", Description: "oom+"}
-	info, err := ParseRule(e)
+	info, err := ParseRule("oom+")
 	Expect(err).To(BeNil())
 	Expect(info.Recursive).To(BeFalse())
 	Expect(info.Name).To(Equal("oom"))
@@ -50,8 +46,7 @@ func TestOoMRule(t *testing.T) {
 func TestRecursiveRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	e := Element{Name: "_", Description: "^recur"}
-	info, err := ParseRule(e)
+	info, err := ParseRule("^recur")
 	Expect(err).To(BeNil())
 	Expect(info.Recursive).To(BeTrue())
 	Expect(info.Name).To(Equal("recur"))
@@ -61,8 +56,7 @@ func TestRecursiveRule(t *testing.T) {
 func TestRecursiveComplexRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	e := Element{Name: "_", Description: "^recur?"}
-	info, err := ParseRule(e)
+	info, err := ParseRule("^recur?")
 	Expect(err).To(BeNil())
 	Expect(info.Recursive).To(BeTrue())
 	Expect(info.Name).To(Equal("recur"))

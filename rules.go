@@ -40,13 +40,10 @@ func (r RuleInfo) checkCount(count int) error {
 	return nil
 }
 
-func ParseRule(e Element) (rule RuleInfo, err error) {
+func ParseRule(desc string) (rule RuleInfo, err error) {
 	rule = RuleInfo{Cardinality: Zero}
-	if e.Description == "" {
-		err = fmt.Errorf("Rule element %s doesn't include a description", e.String())
-		return
-	}
-	str := e.Description
+
+	str := desc
 	if str[0] == '^' {
 		str = str[1:]
 		rule.Recursive = true

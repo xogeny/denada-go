@@ -11,8 +11,14 @@ func Check(input ElementList, grammar ElementList) []error {
 		// Initialize how many matches have been made for this rule
 		count := 0
 
+		// Make sure grammar element has a (rule) description
+		if g.Description == "" {
+			ret = append(ret, fmt.Errorf("Grammar element %s has no description", g.String()))
+			continue
+		}
+
 		// Parse the rule information from the description
-		rule, err := ParseRule(g)
+		rule, err := ParseRule(g.Description)
 
 		// If there is an error in the rule description, add an error and
 		// skip this grammar element
