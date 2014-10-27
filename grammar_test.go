@@ -20,6 +20,24 @@ section DNS {
 }
 `
 
+func Test_StringMatch(t *testing.T) {
+	RegisterTestingT(t)
+
+	match := matchString("abc", "abc")
+	Expect(match).To(BeTrue())
+	match = matchString("abcabc", "(abc)+")
+	Expect(match).To(BeTrue())
+	match = matchString("abc", "_")
+	Expect(match).To(BeTrue())
+	match = matchString("abc", ".+")
+	Expect(match).To(BeTrue())
+
+	match = matchString("abc", "def")
+	Expect(match).To(BeFalse())
+	match = matchString("_", "abc")
+	Expect(match).To(BeFalse())
+}
+
 func Test_Grammar(t *testing.T) {
 	RegisterTestingT(t)
 

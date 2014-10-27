@@ -34,7 +34,7 @@ func Check(input ElementList, grammar ElementList) []error {
 		// Now, loop over all the actual input elements and see if they match
 		// any of the rules
 		for _, in := range input {
-			if match(in, g) {
+			if matchElement(in, g) {
 				// A match was found, so increment the count for this particular
 				// grammar rule
 				count++
@@ -73,6 +73,17 @@ func Check(input ElementList, grammar ElementList) []error {
 	return ret
 }
 
+func matchString(input string, grammar string) bool {
+	if grammar == "_" {
+		return true
+	}
+	matched, err := regexp.MatchString(grammar, input)
+	if err == nil && matched {
+		return true
+	}
+	return false
+}
+
 func matchQualifiers(input Element, grammar Element) bool {
 	imatch := make([]bool, len(input.Qualifiers))
 	for _, g := range grammar.Qualifiers {
@@ -86,8 +97,8 @@ func matchQualifiers(input Element, grammar Element) bool {
 		}
 
 		for i, in := range input.Qualifiers {
-			matched, err := regexp.MatchString(rule.Name, in)
-			if err == nil && matched {
+			matched := matchString(in, rule.Name)
+			if matched {
 				imatch[i] = true
 				count++
 			}
@@ -136,8 +147,8 @@ func matchModifications(input Element, grammar Element) bool {
 		// Loop over all actual modification keys and values
 		for i, ie := range input.Modifications {
 			// Check to see if the keys match
-			matched, err := regexp.MatchString(rule.Name, i)
-			if err == nil && matched {
+			matched := matchString(i, rule.Name)
+			if matched {
 				// If so, check if the expressions match
 				if matchExpr(ie, ge) {
 					// If so, this input is matched and so is the grammar rule
@@ -172,12 +183,12 @@ func matchExpr(input Expr, grammar Expr) bool {
 	return true
 }
 
-func match(input Element, grammar Element) bool {
+func matchElement(input Element, grammar Element) bool {
 	// Check if the names match
-	matched, err := regexp.MatchString(grammar.Name, input.Name)
+	matched := matchString(input.Name, grammar.Name)
 
 	// If the names don't match, no match
-	if err != nil || !matched {
+	if !matched {
 		return false
 	}
 
