@@ -4,11 +4,11 @@ import "fmt"
 import "regexp"
 import "log"
 
-func Check(input ElementList, grammar ElementList) error {
-	return CheckContents(input, grammar)
+func Check(input ElementList, grammar ElementList, diag bool) error {
+	return CheckContents(input, grammar, diag, "")
 }
 
-func CheckContents(input ElementList, grammar ElementList) error {
+func CheckContents(input ElementList, grammar ElementList, diag bool, prefix string) error {
 	// Create a list of errors for this context
 	ret := []error{}
 
@@ -38,11 +38,16 @@ func CheckContents(input ElementList, grammar ElementList) error {
 		// Now, loop over all the actual input elements and see if they match
 		// any of the rules
 		for _, in := range input {
+			// Normally, if we find a match in matchElement, we'll use that
+			// matching rules contents as the rules to apply to the matching
+			// inputs children...
 			context := g.Contents
 			if rule.Recursive {
+				// ...but if the rule is recursive, we choose the same rules
+				// as we are currently using at this level
 				context = grammar
 			}
-			ematch := matchElement(in, g, context)
+			ematch := matchElement(in, g, context, diag, prefix)
 			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
@@ -51,11 +56,22 @@ func CheckContents(input ElementList, grammar ElementList) error {
 				// Then check to see if this input has matched any previous rules
 				if in.rule == "" {
 					// If not, indicate what rule this input matched
+					if diag {
+						log.Printf("%sInput %s matched %s", prefix, in.String(), rule.Name)
+					}
 					in.rule = rule.Name
 				} else {
+					if diag {
+						log.Printf("%sInput %s already matched %s", prefix, in.String(), in.rule)
+					}
 					// If so, add an error
 					ret = append(ret, fmt.Errorf("Element %s matched rule %s and %s",
 						in.String(), in.rule, rule.Name))
+				}
+			} else {
+				if diag {
+					log.Printf("%sInput %s did not match %s because %s", prefix, in.String(),
+						rule.Name, ematch.Error())
 				}
 			}
 		}
@@ -76,23 +92,7 @@ func CheckContents(input ElementList, grammar ElementList) error {
 			// If not, add an error
 			msg := fmt.Sprintf("Element %s didn't match any rule: ", in.String())
 			for _, g := range grammar {
-				// Parse the rule information from the description
-				rule, err := ParseRule(g.Description)
-				if err != nil {
-					continue
-				}
-
-				context := g.Contents
-				if rule.Recursive {
-					context = grammar
-				}
-
-				ematch := matchElement(in, g, context)
-				if ematch != nil {
-					msg = fmt.Sprintf("%s\n  %s: %s", msg, g.Name, ematch.Error())
-				} else {
-					msg = fmt.Sprintf("%s\n  %s: IT MATCHES!?!", msg, g.Name)
-				}
+				msg = fmt.Sprintf("%s\n  Didn't match %s", msg, g.Description)
 			}
 			ret = append(ret, fmt.Errorf(msg))
 		}
@@ -216,7 +216,8 @@ func matchExpr(input Expr, grammar Expr) bool {
 	return true
 }
 
-func matchElement(input *Element, grammar *Element, context ElementList) error {
+func matchElement(input *Element, grammar *Element,
+	context ElementList, diag bool, prefix string) error {
 	// Check if the names match
 	matched := matchString(input.Name, grammar.Name)
 
@@ -232,7 +233,7 @@ func matchElement(input *Element, grammar *Element, context ElementList) error {
 			// If the input is a definition but the grammar is a declaration, no match
 			return fmt.Errorf("Element type mismatch")
 		}
-		cerr := CheckContents(input.Contents, context)
+		cerr := CheckContents(input.Contents, context, diag, prefix+"  ")
 		if cerr != nil {
 			// If the contents of input don't match the contents of grammar, no match
 			return fmt.Errorf("Content mismatch: %v", cerr)
