@@ -4,12 +4,14 @@ import "fmt"
 
 type Expr interface{}
 
+type Modifications map[string]Expr
+
 type Element struct {
 	/* Common to all elements */
 	Qualifiers    []string
 	Name          string
 	Description   string
-	Modifications map[string]Expr
+	Modifications Modifications
 
 	/* For definitions */
 	Contents ElementList
