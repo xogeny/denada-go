@@ -27,7 +27,7 @@ import (
     number     interface{}
 	string     string
 	elements   ElementList
-	element    Element
+	element    *Element
     expr       Expr
     dict       map[string]Expr
 }
@@ -108,8 +108,8 @@ File1
 }
 
 Elem
-: Definition { $$ = $1 }
-| Declaration {	$$ = $1 }
+: Definition { $$ = $1; $$.definition = true; }
+| Declaration {	$$ = $1; $$.definition = false; }
 
 Modification
 : IDENTIFIER EQUALS Expr {
@@ -160,7 +160,7 @@ QualifiersAndId
 }
 
 QualifiersAndId1
-: /* EMPTY */ {	$$ = Element{} }
+: /* EMPTY */ {	$$ = &Element{} }
 | QualifiersAndId1 IDENTIFIER {
   if $1.Name!="" {
     $1.Qualifiers = append($1.Qualifiers, $1.Name);

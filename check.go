@@ -34,7 +34,8 @@ func Check(input ElementList, grammar ElementList) []error {
 		// Now, loop over all the actual input elements and see if they match
 		// any of the rules
 		for _, in := range input {
-			if matchElement(in, g) {
+			ematch := matchElement(in, g)
+			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
 				count++
@@ -65,7 +66,16 @@ func Check(input ElementList, grammar ElementList) []error {
 	for _, in := range input {
 		if in.rule == "" {
 			// If not, add an error
-			ret = append(ret, fmt.Errorf("Element %s didn't match any rule", in.String()))
+			msg := fmt.Sprintf("Element %s didn't match any rule: ", in.String())
+			for _, g := range grammar {
+				ematch := matchElement(in, g)
+				if ematch != nil {
+					msg = fmt.Sprintf("%s\n  %s: %s", msg, g.Name, ematch.Error())
+				} else {
+					msg = fmt.Sprintf("%s\n  %s: IT MATCHES!?!", msg, g.Name)
+				}
+			}
+			ret = append(ret, fmt.Errorf(msg))
 		}
 	}
 
@@ -84,7 +94,7 @@ func matchString(input string, grammar string) bool {
 	return false
 }
 
-func matchQualifiers(input Element, grammar Element) bool {
+func matchQualifiers(input *Element, grammar *Element) bool {
 	imatch := make([]bool, len(input.Qualifiers))
 	for _, g := range grammar.Qualifiers {
 		count := 0
@@ -123,7 +133,7 @@ func matchQualifiers(input Element, grammar Element) bool {
 	return true
 }
 
-func matchModifications(input Element, grammar Element) bool {
+func matchModifications(input *Element, grammar *Element) bool {
 	// Create a map to keep track of which modification keys on the input
 	// element find a match
 	imatch := map[string]bool{}
@@ -183,43 +193,46 @@ func matchExpr(input Expr, grammar Expr) bool {
 	return true
 }
 
-func matchElement(input Element, grammar Element) bool {
+func matchElement(input *Element, grammar *Element) error {
 	// Check if the names match
 	matched := matchString(input.Name, grammar.Name)
 
 	// If the names don't match, no match
 	if !matched {
-		return false
+		return fmt.Errorf("Name mismatch (%s doesn't match pattern %s)",
+			input.Name, grammar.Name)
 	}
 
 	// Check whether the input is a definition or declaration
 	if input.isDefinition() {
 		if grammar.isDeclaration() {
 			// If the input is a definition but the grammar is a declaration, no match
-			return false
+			return fmt.Errorf("Element type mismatch")
 		}
 		cerrors := Check(input.Contents, grammar.Contents)
 		if len(cerrors) > 0 {
 			// If the contents of input don't match the contents of grammar, no match
-			return false
+			return fmt.Errorf("Content mismatch: %v", cerrors)
 		}
 	} else {
 		if grammar.isDefinition() {
 			// If the input is a declaration but the grammar is a definition, no match
-			return false
+			return fmt.Errorf("Element type mismatch")
 		}
 		if !matchExpr(input.Value, grammar.Value) {
-			return false
+			return fmt.Errorf("Value pattern mismatch")
 		}
 	}
 
 	if !matchQualifiers(input, grammar) {
-		return false
+		return fmt.Errorf("Qualifier mismatch (%v vs %v)", input.Qualifiers,
+			grammar.Qualifiers)
 	}
 
 	if !matchModifications(input, grammar) {
-		return false
+		return fmt.Errorf("Modification mismatch (%v vs %v)", input.Modifications,
+			grammar.Modifications)
 	}
 
-	return true
+	return nil
 }

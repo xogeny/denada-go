@@ -51,15 +51,15 @@ func (e Element) isDeclaration() bool {
 	return !e.definition
 }
 
-type ElementList []Element
+type ElementList []*Element
 
-func (e ElementList) Definition(name string) (Element, error) {
+func (e ElementList) Definition(name string) (*Element, error) {
 	for _, d := range e {
 		if d.isDefinition() && d.Name == name {
 			return d, nil
 		}
 	}
-	return Element{}, fmt.Errorf("Unable to find definition for %s")
+	return nil, fmt.Errorf("Unable to find definition for %s")
 }
 
 func MakeElementList() ElementList {
