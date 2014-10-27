@@ -28,8 +28,8 @@ import (
 	string     string
 	elements   ElementList
 	element    Element
-    expr       interface{}
-    dict       map[string]interface{}
+    expr       Expr
+    dict       map[string]Expr
 }
 
 %token	BOOLEAN
@@ -113,7 +113,7 @@ Elem
 
 Modification
 : IDENTIFIER EQUALS Expr {
-  $$ = map[string]interface{}{};
+  $$ = map[string]Expr{};
   $$[$1] = $3;
 }
 
@@ -123,7 +123,7 @@ Modifiers
 }
 
 Modifiers1
-: /* EMPTY */ {	$$ = map[string]interface{}{} }
+: /* EMPTY */ {	$$ = map[string]Expr{} }
 | Modification Modifiers11 {
   $$ = $2;
   for k, v := range($1) {
@@ -132,7 +132,7 @@ Modifiers1
 }
 
 Modifiers11
-: /* EMPTY */ {	$$ = map[string]interface{}{} }
+: /* EMPTY */ {	$$ = map[string]Expr{} }
 | Modifiers11 COMMA Modification {
   $$ = $1;
   for k, v := range($3) {
@@ -147,7 +147,7 @@ Preface
 }
 
 PrefaceModifiers
-: /* EMPTY */ {	$$ = map[string]interface{}{} }
+: /* EMPTY */ {	$$ = map[string]Expr{} }
 | Modifiers	{ $$ = $1 }
 
 QualifiersAndId

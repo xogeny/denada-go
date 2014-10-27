@@ -2,18 +2,20 @@ package denada
 
 import "fmt"
 
+type Expr interface{}
+
 type Element struct {
 	/* Common to all elements */
 	Qualifiers    []string
 	Name          string
 	Description   string
-	Modifications map[string]interface{}
+	Modifications map[string]Expr
 
 	/* For definitions */
 	Contents ElementList
 
 	/* For declarations */
-	Value interface{}
+	Value Expr
 
 	rule       string
 	definition bool
