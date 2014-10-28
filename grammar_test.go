@@ -66,7 +66,7 @@ func Test_QualifierMatch(t *testing.T) {
 	gl := ElementList{&g}
 	il := ElementList{&i}
 
-	ml := Check(il, gl, true)
+	ml := Check(il, gl, false)
 	Expect(ml).ToNot(BeNil())
 }
 
@@ -97,24 +97,24 @@ func Test_Grammar(t *testing.T) {
 	il, ie := ParseString(config_input1)
 	Expect(ie).To(BeNil())
 
-	err := Check(il, gl, true)
+	err := Check(il, gl, false)
 	Expect(err).To(BeNil())
 
 	e1, e1e := ParseString(config_err1)
 	Expect(e1e).To(BeNil())
 
-	err = Check(e1, gl, true)
+	err = Check(e1, gl, false)
 	Expect(err).ToNot(BeNil())
 
 	e2, e2e := ParseString(config_err2)
 	Expect(e2e).To(BeNil())
 
-	err = Check(e2, gl, true)
+	err = Check(e2, gl, false)
 	Expect(err).ToNot(BeNil())
 
 	e3, e3e := ParseString(config_err3)
 	Expect(e3e).To(BeNil())
 
-	err = Check(e3, gl, true)
+	err = Check(e3, gl, false)
 	Expect(err).ToNot(BeNil())
 }

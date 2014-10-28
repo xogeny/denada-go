@@ -2,7 +2,6 @@ package denada
 
 import "io"
 import "fmt"
-import "log"
 import "bytes"
 import "strings"
 import "io/ioutil"
@@ -13,20 +12,18 @@ type Parser struct {
 	src        *strings.Reader
 	lineNumber int
 	colNumber  int
-	log        *log.Logger
 }
 
-func NewParser(s io.Reader, l *log.Logger) (p *Parser, err error) {
+func NewParser(s io.Reader) (p *Parser, err error) {
 	str, err := ioutil.ReadAll(s)
 	if err != nil {
 		return
 	}
 	src := strings.NewReader(string(str))
-	p = &Parser{src: src, lineNumber: 0, colNumber: 0, log: l}
+	p = &Parser{src: src, lineNumber: 0, colNumber: 0}
 	return
 }
 func (p *Parser) ParseFile() (ElementList, error) {
-	log.Printf(">> File")
 	ret := ElementList{}
 	for {
 		// Try to parse an Element
@@ -34,16 +31,13 @@ func (p *Parser) ParseFile() (ElementList, error) {
 
 		// If any other error
 		if err != nil {
-			log.Printf("<< File (Error: %v)", err)
 			return nil, err
 		}
 
 		// If elem is nil, that means there are no more elements to parse
 		if elem == nil {
-			log.Printf("<< File")
 			return ret, nil
 		} else {
-			log.Printf("  -> Got element %v", elem)
 			// Add element and continue
 			ret = append(ret, elem)
 		}
@@ -193,8 +187,6 @@ func (p *Parser) ParseElement(parsingFile bool) (ret *Element, err error) {
 		if err != nil {
 			return
 		}
-
-		log.Printf("Token after expression %v is %v", ret.Value, t)
 
 		// Check to see if there is a description after the value
 		if t.Type == T_QUOTE {
@@ -397,10 +389,8 @@ func (p *Parser) nextNonWhiteToken() (t Token, err error) {
 	for {
 		t, err = p.nextToken()
 		if err != nil {
-			log.Printf("--Error while reading tokens: %v", err)
 			return
 		}
-		log.Printf("--Got Token: %v", t)
 		if t.Type != T_WHITE {
 			return
 		}

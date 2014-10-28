@@ -61,7 +61,7 @@ func (e ElementList) Definition(name string) (*Element, error) {
 			return d, nil
 		}
 	}
-	return nil, fmt.Errorf("Unable to find definition for %s")
+	return nil, fmt.Errorf("Unable to find definition for %s", name)
 }
 
 func MakeElementList() ElementList {

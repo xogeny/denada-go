@@ -53,12 +53,11 @@ class Foo(x=5.0, y=1, z="This is a \"test\"", a={"key1": 5}, b=null, c=[true, fa
 }
 `
 
-func Test_LLSimpleDeclaration(t *testing.T) {
+func Test_SimpleDeclaration(t *testing.T) {
 	RegisterTestingT(t)
 
 	r := strings.NewReader("set x = 5 \"Description\";")
-	p, err := NewParser(r, plog)
-	elems, err := p.ParseFile()
+	elems, err := Parse(r)
 
 	Expect(err).To(BeNil())
 	Expect(len(elems)).To(Equal(1))
@@ -77,22 +76,20 @@ func Test_LLSimpleDeclaration(t *testing.T) {
 	Expect(v).To(Equal(5))
 }
 
-func Test_LLErrors(t *testing.T) {
+func Test_Errors(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader("set x = 5")
 
-	p, err := NewParser(r, plog)
-	_, err = p.ParseFile()
+	_, err := Parse(r)
 
 	Expect(err).ToNot(BeNil())
 }
 
-func Test_LLSampleInput(t *testing.T) {
+func Test_SampleInput(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader(sample)
 
-	p, err := NewParser(r, plog)
-	el, err := p.ParseFile()
+	el, err := Parse(r)
 
 	Expect(err).To(BeNil())
 
@@ -102,12 +99,11 @@ func Test_LLSampleInput(t *testing.T) {
 	Expect(el[2].isDefinition()).To(BeTrue())
 }
 
-func Test_LLSampleNoExprInput(t *testing.T) {
+func Test_SampleNoExprInput(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader(sample_noexprs)
 
-	p, err := NewParser(r, plog)
-	el, err := p.ParseFile()
+	el, err := Parse(r)
 
 	Expect(err).To(BeNil())
 
@@ -116,12 +112,11 @@ func Test_LLSampleNoExprInput(t *testing.T) {
 	Expect(el[1].isDefinition()).To(BeTrue())
 }
 
-func Test_LLSampleJSONInput(t *testing.T) {
+func Test_SampleJSONInput(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader(sample_exprs)
 
-	p, err := NewParser(r, plog)
-	el, err := p.ParseFile()
+	el, err := Parse(r)
 
 	Expect(err).To(BeNil())
 
