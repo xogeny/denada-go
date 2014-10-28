@@ -2,9 +2,9 @@ package denada
 
 import "fmt"
 
-type Expr interface{}
+import "github.com/bitly/go-simplejson"
 
-type Modifications map[string]Expr
+type Modifications map[string]*simplejson.Json
 
 type Element struct {
 	/* Common to all elements */
@@ -17,7 +17,7 @@ type Element struct {
 	Contents ElementList
 
 	/* For declarations */
-	Value Expr
+	Value *simplejson.Json
 
 	rule       string
 	definition bool

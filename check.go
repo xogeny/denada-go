@@ -4,6 +4,8 @@ import "fmt"
 import "regexp"
 import "log"
 
+import "github.com/bitly/go-simplejson"
+
 func Check(input ElementList, grammar ElementList, diag bool) error {
 	return CheckContents(input, grammar, diag, "")
 }
@@ -212,7 +214,7 @@ func matchModifications(input *Element, grammar *Element) bool {
 }
 
 // TODO: Implement this (use JSON schema?)
-func matchExpr(input Expr, grammar Expr) bool {
+func matchExpr(input *simplejson.Json, grammar *simplejson.Json) bool {
 	return true
 }
 

@@ -6,7 +6,6 @@ import "log"
 import "bytes"
 import "strings"
 import "io/ioutil"
-import "encoding/json"
 
 import "github.com/bitly/go-simplejson"
 
@@ -231,35 +230,7 @@ func (p *Parser) ParseContents() (ElementList, error) {
 	}
 }
 
-func (p *Parser) ParseExpr2() (expr Expr, err error) {
-	// Grab whatever is left of the input stream
-	left, err := ioutil.ReadAll(p.src)
-	log.Printf("left = %s", left)
-	if err != nil {
-		return
-	}
-
-	// Create a JSON decoder on the remaining bytes
-	obj := strings.NewReader(string(left))
-	jexpr, err := simplejson.NewFromReader(obj)
-	if err == nil {
-		// Read what is left and reset input stream to that
-		left, err = ioutil.ReadAll(obj)
-		log.Printf("SUCCESS: %v, left = %s", jexpr, left)
-
-		if err != nil {
-			return
-		}
-		p.src = strings.NewReader(string(left))
-	}
-
-	// TODO: Check for float, int, string
-	err = fmt.Errorf("Unrecognized expression: %s", left[0:20])
-
-	return
-}
-
-func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
+func (p *Parser) ParseExpr(modification bool) (expr *simplejson.Json, err error) {
 	line := p.lineNumber
 	col := p.colNumber
 	// Read input stream keeping track of nesting of {}s and "s.  The
@@ -309,10 +280,7 @@ func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
 				p.src.UnreadRune()
 				p.lineNumber = l
 				p.colNumber = c
-				log.Printf("Expr string = %s", w.String())
-				decoder := json.NewDecoder(w)
-				decoder.UseNumber()
-				err = decoder.Decode(&expr)
+				expr, err = simplejson.NewJson(w.Bytes())
 				if err != nil {
 					err = fmt.Errorf("Error parsing expression starting @ (L%d, C%d): %v",
 						line+1, col+1, err)
@@ -337,45 +305,6 @@ func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
 		}
 		w.WriteRune(ch)
 	}
-}
-
-// Parse an expression (argument indicates whether we are parsing
-// it within a modification or not
-func (p *Parser) ParseExpr3(modification bool) (expr Expr, err error) {
-	// Grab whatever is left of the input stream
-	left, err := ioutil.ReadAll(p.src)
-	log.Printf("left = %s", left)
-	if err != nil {
-		return
-	}
-
-	// Create a JSON decoder on the remaining bytes
-	obj := strings.NewReader(string(left))
-	w := bytes.NewBuffer([]byte{})
-	tee := io.TeeReader(obj, w)
-	decoder := json.NewDecoder(tee)
-	decoder.UseNumber()
-
-	var data interface{}
-	// Try to extract a JSON object
-	err = decoder.Decode(&data)
-	if err == nil {
-		log.Printf("SUCCESS: %v", data)
-		expr = data
-		// Read what is left and reset input stream to that
-		left, err = ioutil.ReadAll(tee)
-		log.Printf("left = %s", left)
-		log.Printf("w = %s", w.String())
-		if err != nil {
-			return
-		}
-		p.src = strings.NewReader(string(left))
-	}
-
-	// TODO: Check for float, int, string
-	err = fmt.Errorf("Unrecognized expression: %s", left[0:20])
-
-	return
 }
 
 // This is called if we've already parsed a "(" after a name

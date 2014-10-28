@@ -72,7 +72,9 @@ func Test_LLSimpleDeclaration(t *testing.T) {
 	Expect(elem.Qualifiers).To(Equal([]string{"set"}))
 	Expect(elem.Name).To(Equal("x"))
 	Expect(elem.Description).To(Equal("Description"))
-	Expect(elem.Value).To(Equal(5))
+	v, err := elem.Value.Int()
+	Expect(err).To(BeNil())
+	Expect(v).To(Equal(5))
 }
 
 func Test_LLErrors(t *testing.T) {
