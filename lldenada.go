@@ -246,10 +246,13 @@ func (p *Parser) ParseExpr2() (expr Expr, err error) {
 }
 
 func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
+	line := p.lineNumber
+	col := p.colNumber
 	// Read input stream keeping track of nesting of {}s and "s.  The
 	// next unquoted ',', ')' or ';' outside of quotes and outside an
 	// object definition is the end of the JSON string.
 	objcount := 0
+	arraycount := 0
 	quote := false
 	escaped := false
 
@@ -259,14 +262,16 @@ func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
 		ch, _, terr := p.src.ReadRune()
 		err = terr
 		if err == io.EOF {
-			err = fmt.Errorf("Reached EOF while trying to read expression at (%d,%d)",
-				p.lineNumber, p.colNumber)
+			err = fmt.Errorf("Reached EOF while trying to read expression at (L%d, C%d)",
+				p.lineNumber+1, p.colNumber+1)
 			return
 		}
 		if err != nil {
 			return
 		}
 
+		l := p.lineNumber
+		c := p.colNumber
 		p.updatePosition(ch)
 
 		if quote {
@@ -281,12 +286,18 @@ func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
 				}
 			}
 		} else {
-			if objcount == 0 && (ch == ',' || ch == ')' || ch == ';') {
+			if objcount == 0 && arraycount == 0 && (ch == ',' || ch == ')' || ch == ';') {
 				p.src.UnreadRune()
+				p.lineNumber = l
+				p.colNumber = c
 				log.Printf("Expr string = %s", w.String())
 				decoder := json.NewDecoder(w)
 				decoder.UseNumber()
 				err = decoder.Decode(&expr)
+				if err != nil {
+					err = fmt.Errorf("Error parsing expression starting @ (L%d, C%d): %v",
+						line+1, col+1, err)
+				}
 				return
 			}
 			if ch == '"' {
@@ -295,8 +306,14 @@ func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
 			if ch == '{' {
 				objcount++
 			}
+			if ch == '[' {
+				arraycount++
+			}
 			if ch == '}' {
 				objcount--
+			}
+			if ch == ']' {
+				arraycount--
 			}
 		}
 		w.WriteRune(ch)
@@ -416,10 +433,12 @@ func (p *Parser) ParseString() (ret string, err error) {
 			err = terr
 			return
 		}
-		p.colNumber++
+		p.updatePosition(ch)
+
 		if ch == '"' {
 			break
 		}
+
 		runes = append(runes, ch)
 	}
 	ret = string(runes)
@@ -447,18 +466,22 @@ func (p *Parser) updatePosition(ch rune) bool {
 		p.lineNumber++
 		return true
 	case '\t':
-		p.colNumber += 3
+		p.colNumber += 4 // Assume tabs as four spaces
 		return true
 	case ' ':
+		p.colNumber++
 		return true
 	case '\r':
 		p.colNumber = 0
 		return true
+	default:
+		p.colNumber++
 	}
 	return false
 }
 
 func (p *Parser) nextToken() (t Token, err error) {
+	// Record line number and column number at the start of this token
 	line := p.lineNumber
 	col := p.colNumber
 
@@ -472,9 +495,6 @@ func (p *Parser) nextToken() (t Token, err error) {
 	if err != nil {
 		return
 	}
-
-	// Increment column number
-	p.colNumber++
 
 	// Assume this isn't white space
 	white := p.updatePosition(ch)
@@ -518,9 +538,14 @@ func (p *Parser) nextToken() (t Token, err error) {
 			if err != nil {
 				return
 			}
+
+			l := p.lineNumber
+			c := p.colNumber
 			// If not white space, we are done
 			if !p.updatePosition(ch) {
 				p.src.UnreadRune()
+				p.lineNumber = l
+				p.colNumber = c
 				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
 				return
 			}
@@ -539,10 +564,16 @@ func (p *Parser) nextToken() (t Token, err error) {
 			if err != nil {
 				return
 			}
+
+			l := p.lineNumber
+			c := p.colNumber
+
 			if p.updatePosition(ch) || ch == '=' ||
 				ch == '{' || ch == '}' || ch == '(' ||
 				ch == ')' || ch == ',' || ch == ';' {
 				p.src.UnreadRune()
+				p.lineNumber = l
+				p.colNumber = c
 				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
 				return
 			}

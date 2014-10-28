@@ -72,3 +72,18 @@ func Test_LLSampleNoExprInput(t *testing.T) {
 	Expect(el[0].isDefinition()).To(BeTrue())
 	Expect(el[1].isDefinition()).To(BeTrue())
 }
+
+func Test_LLSampleJSONInput(t *testing.T) {
+	RegisterTestingT(t)
+	r := strings.NewReader(sample_exprs)
+
+	p, err := NewParser(r, plog)
+	el, err := p.ParseFile()
+
+	Expect(err).To(BeNil())
+
+	Expect(len(el)).To(Equal(7))
+	for _, e := range el {
+		Expect(e.isDefinition()).To(BeFalse())
+	}
+}

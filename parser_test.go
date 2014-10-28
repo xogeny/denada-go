@@ -35,6 +35,16 @@ computer XYZ {
 }
 `
 
+var sample_exprs = `
+Real x = 5.0;
+Integer y = 1;
+String z = "This is a \"test\"";
+Object a = {"key1": 5, "\"test\"": 2, "nested": {"r": "another string"}};
+Null b = null;
+Boolean c = [true, false];
+Array d = [{"x": 5}, "foo", "\"test\"", true];
+`
+
 func Test_YYSimpleDeclaration(t *testing.T) {
 	RegisterTestingT(t)
 
