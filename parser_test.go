@@ -43,6 +43,10 @@ Object a = {"key1": 5, "\"test\"": 2, "nested": {"r": "another string"}};
 Null b = null;
 Boolean c = [true, false];
 Array d = [{"x": 5}, "foo", "\"test\"", true];
+class Foo(x=5.0, y=1, z="This is a \"test\"", a={"key1": 5}, b=null, c=[true, false],
+          d = [{"x": 5}, "foo"]) {
+  Real x = 5.0;
+}
 `
 
 func Test_YYSimpleDeclaration(t *testing.T) {

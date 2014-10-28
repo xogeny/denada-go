@@ -35,13 +35,10 @@ func Test_LLErrors(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader("set x = 5")
 
-	exp := "Parsing errors:\n  Error syntax error at line 0, column 9"
-
 	p, err := NewParser(r, plog)
 	_, err = p.ParseFile()
 
 	Expect(err).ToNot(BeNil())
-	Expect(err.Error()).To(Equal(exp))
 }
 
 func Test_LLSampleInput(t *testing.T) {
@@ -82,8 +79,12 @@ func Test_LLSampleJSONInput(t *testing.T) {
 
 	Expect(err).To(BeNil())
 
-	Expect(len(el)).To(Equal(7))
-	for _, e := range el {
-		Expect(e.isDefinition()).To(BeFalse())
+	Expect(len(el)).To(Equal(8))
+	for i, e := range el {
+		if i == 7 {
+			Expect(e.isDefinition()).To(BeTrue())
+		} else {
+			Expect(e.isDefinition()).To(BeFalse())
+		}
 	}
 }
