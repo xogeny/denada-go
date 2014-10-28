@@ -26,7 +26,6 @@ func NewParser(s io.Reader, l *log.Logger) (p *Parser, err error) {
 	p = &Parser{src: src, lineNumber: 0, colNumber: 0, log: l}
 	return
 }
-
 func (p *Parser) ParseFile() (ElementList, error) {
 	log.Printf(">> File")
 	ret := ElementList{}
@@ -52,144 +51,168 @@ func (p *Parser) ParseFile() (ElementList, error) {
 	}
 }
 
+// Returns an element if one found, nil on "}"...otherwise an error
+func (p *Parser) ParseElement(parsingFile bool) (ret *Element, err error) {
+	ret = &Element{}
+
+	// Get first token of the element
+	t, err := p.nextNonWhiteToken()
+	if err != nil {
+		return
+	}
+
+	// Depending on the context, the element list is terminated by
+	// either an EOF or a }.  Check for these...
+	if t.Type == T_EOF {
+		if parsingFile {
+			// Expected, indicate no more elements
+			return nil, nil
+		} else {
+			// Unexpected
+			err = t.Expected("definition, declaration or '}'")
+			return
+		}
+	}
+
+	if t.Type == T_RBRACE {
+		if parsingFile {
+			// Unexpected
+			err = t.Expected("definition, declaration or EOF")
+			return
+		} else {
+			// Expected
+			return nil, nil
+		}
+	}
+
+	// Assuming there are more elements, the first thing should always
+	// be an identifier
+	if t.Type != T_IDENTIFIER {
+		err = t.Expected("definition, declaration or EOF")
+		return
+	}
+	ret.Name = t.String
+
+	// Get next token
+	t, err = p.nextNonWhiteToken()
+	if err != nil {
+		return
+	}
+
+	// Parse all remaining identifiers and white space
+	for {
+		if t.Type == T_IDENTIFIER {
+			// More qualifiers
+			ret.Qualifiers = append(ret.Qualifiers, ret.Name)
+			ret.Name = t.String
+		} else if t.Type == T_LPAREN || t.Type == T_QUOTE || t.Type == T_EQUALS ||
+			t.Type == T_SEMI || t.Type == T_LBRACE {
+			// Expected next tokens
+			break
+		} else {
+			err = UnexpectedToken{
+				Found:    t,
+				Expected: "identifier, whitespace, (, \", =, ; or {",
+			}
+			return
+		}
+		t, err = p.nextNonWhiteToken()
+		if err != nil {
+			return
+		}
+	}
+
+	// Check if there is a modification (declaration or definition)
+	if t.Type == T_LPAREN {
+		ret.Modifications, err = p.ParseModifications()
+		if err != nil {
+			return
+		}
+		// Now get next token
+		t, err = p.nextNonWhiteToken()
+		if err != nil {
+			return
+		}
+	}
+
+	foundString := false
+
+	// Read the description, if present
+	if t.Type == T_QUOTE {
+		ret.Description, err = p.ParseString()
+		if err != nil {
+			return
+		}
+		foundString = true
+
+		// Now get next token
+		t, err = p.nextNonWhiteToken()
+		log.Printf("  err = %v", err)
+		if err != nil {
+			return
+		}
+	}
+
+	// Is this a definition?
+	if t.Type == T_LBRACE {
+		// Definitely a definition, finish reading and return
+		ret.definition = true
+		for {
+			e, terr := p.ParseElement(false)
+			if terr != nil {
+				err = terr
+				return
+			}
+			// This means we are done
+			if e == nil {
+				err = nil
+				return
+			}
+			ret.Contents = append(ret.Contents, e)
+		}
+	}
+
+	// At this point, we know we have a declaration
+	ret.definition = false
+
+	// Check to see if it has a value
+	if t.Type == T_EQUALS {
+		// If we already parsed a string, then we shouldn't find an '=', we should
+		// find a ';'
+		if foundString {
+			err = t.Expected(";")
+			return
+		}
+
+		// Otherwise, parse the expression
+		ret.Value, err = p.ParseExpr(false)
+		if err != nil {
+			return
+		}
+
+		// Grab the next token
+		t, err = p.nextNonWhiteToken()
+		if err != nil {
+			return
+		}
+	}
+
+	// This should a SEMI that terminates the declaration
+	if t.Type != T_SEMI {
+		err = t.Expected(";")
+	}
+	return
+}
+
 func (p *Parser) ParseContents() (ElementList, error) {
 	ret := ElementList{}
 	for {
+		// Parse elements until there aren't any more
 		elem, err := p.ParseElement(false)
 		if err != nil {
 			return nil, err
 		} else {
 			ret = append(ret, elem)
-		}
-	}
-}
-
-func (p *Parser) nextNonWhiteToken() (t Token, err error) {
-	for {
-		t, err = p.nextToken()
-		if err != nil {
-			log.Printf("--Error while reading tokens: %v", err)
-			return
-		}
-		log.Printf("--Got Token: %v", t)
-		if t.Type != T_WHITE {
-			return
-		}
-	}
-}
-
-func (p *Parser) nextToken() (t Token, err error) {
-	line := p.lineNumber
-	col := p.colNumber
-
-	// Read the first character of the token
-	ch, _, err := p.src.ReadRune()
-	if err == io.EOF {
-		t = Token{Type: T_EOF, String: "", Line: line, Column: col}
-		err = nil
-		return
-	}
-	if err != nil {
-		return
-	}
-
-	// Increment column number
-	p.colNumber++
-
-	// Assume this isn't white space
-	white := false
-
-	switch ch {
-	case '\n':
-		p.colNumber = 0
-		p.lineNumber++
-		white = true
-	case '\t':
-		p.colNumber += 3
-		white = true
-	case ' ':
-		white = true
-	case '\r':
-		p.colNumber = 0
-		white = true
-	case '{':
-		t = Token{Type: T_LBRACE, String: "{", Line: line, Column: col}
-		return
-	case '}':
-		t = Token{Type: T_RBRACE, String: "}", Line: line, Column: col}
-		return
-	case '(':
-		t = Token{Type: T_LPAREN, String: "(", Line: line, Column: col}
-		return
-	case ')':
-		t = Token{Type: T_RPAREN, String: ")", Line: line, Column: col}
-		return
-	case '"':
-		t = Token{Type: T_QUOTE, String: "\"", Line: line, Column: col}
-		return
-	case '=':
-		t = Token{Type: T_EQUALS, String: "=", Line: line, Column: col}
-		return
-	case ';':
-		t = Token{Type: T_SEMI, String: ";", Line: line, Column: col}
-		return
-	case ',':
-		t = Token{Type: T_COMMA, String: ",", Line: line, Column: col}
-		return
-	}
-	if white {
-		// If this was white space, keep reading white space
-		for {
-			ch, _, err = p.src.ReadRune()
-			if err == io.EOF {
-				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
-				err = nil
-				return
-			}
-			if err != nil {
-				return
-			}
-			switch ch {
-			case ' ':
-				p.colNumber++
-				continue
-			case '\n':
-				p.colNumber = 0
-				p.lineNumber++
-				continue
-			case '\t':
-				p.colNumber += 4
-				continue
-			case '\r':
-				p.colNumber = 0
-				continue
-			default:
-				p.src.UnreadRune()
-				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
-				return
-			}
-		}
-	} else {
-		ret := []rune{ch}
-		// If not white space, read until we hit a special character
-		for {
-			ch, _, err = p.src.ReadRune()
-			if err == io.EOF {
-				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
-				err = nil
-				return
-			}
-			if err != nil {
-				return
-			}
-			if ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r' || ch == '=' ||
-				ch == '{' || ch == '}' || ch == '(' || ch == ')' || ch == ',' || ch == ';' {
-				p.src.UnreadRune()
-				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
-				return
-			} else {
-				ret = append(ret, ch)
-			}
 		}
 	}
 }
@@ -222,7 +245,67 @@ func (p *Parser) ParseExpr2() (expr Expr, err error) {
 	return
 }
 
-func (p *Parser) ParseExpr() (expr Expr, err error) {
+func (p *Parser) ParseExpr(modification bool) (expr Expr, err error) {
+	// Read input stream keeping track of nesting of {}s and "s.  The
+	// next unquoted ',', ')' or ';' outside of quotes and outside an
+	// object definition is the end of the JSON string.
+	objcount := 0
+	quote := false
+	escaped := false
+
+	w := bytes.NewBuffer([]byte{})
+
+	for {
+		ch, _, terr := p.src.ReadRune()
+		err = terr
+		if err == io.EOF {
+			err = fmt.Errorf("Reached EOF while trying to read expression at (%d,%d)",
+				p.lineNumber, p.colNumber)
+			return
+		}
+		if err != nil {
+			return
+		}
+
+		p.updatePosition(ch)
+
+		if quote {
+			if escaped {
+				escaped = false
+			} else {
+				if ch == '"' {
+					quote = false
+				}
+				if ch == '\\' {
+					escaped = true
+				}
+			}
+		} else {
+			if objcount == 0 && (ch == ',' || ch == ')' || ch == ';') {
+				p.src.UnreadRune()
+				log.Printf("Expr string = %s", w.String())
+				decoder := json.NewDecoder(w)
+				decoder.UseNumber()
+				err = decoder.Decode(&expr)
+				return
+			}
+			if ch == '"' {
+				quote = true
+			}
+			if ch == '{' {
+				objcount++
+			}
+			if ch == '}' {
+				objcount--
+			}
+		}
+		w.WriteRune(ch)
+	}
+}
+
+// Parse an expression (argument indicates whether we are parsing
+// it within a modification or not
+func (p *Parser) ParseExpr3(modification bool) (expr Expr, err error) {
 	// Grab whatever is left of the input stream
 	left, err := ioutil.ReadAll(p.src)
 	log.Printf("left = %s", left)
@@ -259,7 +342,7 @@ func (p *Parser) ParseExpr() (expr Expr, err error) {
 	return
 }
 
-//  This is called if we've already parsed a "("
+// This is called if we've already parsed a "(" after a name
 func (p *Parser) ParseModifications() (mods Modifications, err error) {
 	mods = Modifications{}
 	first := true
@@ -295,7 +378,7 @@ func (p *Parser) ParseModifications() (mods Modifications, err error) {
 			return
 		}
 
-		expr, terr := p.ParseExpr()
+		expr, terr := p.ParseExpr(true)
 		if terr != nil {
 			err = terr
 			return
@@ -343,142 +426,127 @@ func (p *Parser) ParseString() (ret string, err error) {
 	return
 }
 
-// Returns an element if one found, nil on "}"...otherwise an error
-func (p *Parser) ParseElement(parsingFile bool) (ret *Element, err error) {
-	ret = &Element{}
-
-	t, err := p.nextNonWhiteToken()
-	if err != nil {
-		return
-	}
-
-	if t.Type == T_EOF {
-		if parsingFile {
-			return nil, nil
-		} else {
-			err = t.Expected("definition, declaration or '}'")
-			return
-		}
-	}
-
-	if t.Type == T_RBRACE {
-		if parsingFile {
-			err = t.Expected("definition, declaration or EOF")
-			return
-		} else {
-			return nil, nil
-		}
-	}
-
-	// First thing should always be an identifier
-	if t.Type != T_IDENTIFIER {
-		err = t.Expected("definition, declaration or EOF")
-		return
-	} else {
-		ret.Qualifiers = append(ret.Qualifiers, t.String)
-	}
-
-	// Get next token
-	t, err = p.nextNonWhiteToken()
-	if err != nil {
-		return
-	}
-
-	// Parse all remaining identifiers and white space
+func (p *Parser) nextNonWhiteToken() (t Token, err error) {
 	for {
-		if t.Type == T_IDENTIFIER {
-			ret.Qualifiers = append(ret.Qualifiers, t.String)
-		} else if t.Type == T_LPAREN || t.Type == T_QUOTE || t.Type == T_EQUALS ||
-			t.Type == T_SEMI || t.Type == T_LBRACE {
-			// Expected next tokens
-			break
-		} else {
-			err = UnexpectedToken{
-				Found:    t,
-				Expected: "identifier, whitespace, (, \", =, ; or {",
-			}
+		t, err = p.nextToken()
+		if err != nil {
+			log.Printf("--Error while reading tokens: %v", err)
 			return
 		}
-		t, err = p.nextNonWhiteToken()
-		if err != nil {
+		log.Printf("--Got Token: %v", t)
+		if t.Type != T_WHITE {
 			return
 		}
 	}
+}
 
-	// Check if there is a modification (declaration or definition)
-	if t.Type == T_LPAREN {
-		ret.Modifications, err = p.ParseModifications()
-		if err != nil {
-			return
-		}
-		// Now get next token
-		t, err = p.nextNonWhiteToken()
-		if err != nil {
-			return
-		}
+func (p *Parser) updatePosition(ch rune) bool {
+	switch ch {
+	case '\n':
+		p.colNumber = 0
+		p.lineNumber++
+		return true
+	case '\t':
+		p.colNumber += 3
+		return true
+	case ' ':
+		return true
+	case '\r':
+		p.colNumber = 0
+		return true
+	}
+	return false
+}
+
+func (p *Parser) nextToken() (t Token, err error) {
+	line := p.lineNumber
+	col := p.colNumber
+
+	// Read the first character of the token
+	ch, _, err := p.src.ReadRune()
+	if err == io.EOF {
+		t = Token{Type: T_EOF, String: "", Line: line, Column: col}
+		err = nil
+		return
+	}
+	if err != nil {
+		return
 	}
 
-	log.Printf("After modification parsed, next token is = %v (%v)", t, t.Type)
+	// Increment column number
+	p.colNumber++
 
-	foundString := false
+	// Assume this isn't white space
+	white := p.updatePosition(ch)
 
-	if t.Type == T_QUOTE {
-		ret.Description, err = p.ParseString()
-		if err != nil {
-			return
-		}
-		foundString = true
-
-		// Now get next token
-		t, err = p.nextNonWhiteToken()
-		log.Printf("  err = %v", err)
-		if err != nil {
-			return
-		}
+	switch ch {
+	case '{':
+		t = Token{Type: T_LBRACE, String: "{", Line: line, Column: col}
+		return
+	case '}':
+		t = Token{Type: T_RBRACE, String: "}", Line: line, Column: col}
+		return
+	case '(':
+		t = Token{Type: T_LPAREN, String: "(", Line: line, Column: col}
+		return
+	case ')':
+		t = Token{Type: T_RPAREN, String: ")", Line: line, Column: col}
+		return
+	case '"':
+		t = Token{Type: T_QUOTE, String: "\"", Line: line, Column: col}
+		return
+	case '=':
+		t = Token{Type: T_EQUALS, String: "=", Line: line, Column: col}
+		return
+	case ';':
+		t = Token{Type: T_SEMI, String: ";", Line: line, Column: col}
+		return
+	case ',':
+		t = Token{Type: T_COMMA, String: ",", Line: line, Column: col}
+		return
 	}
 
-	if t.Type == T_LBRACE {
-		// Definitely a definition, finish reading and return
-		ret.definition = true
+	if white {
+		// If this was white space, keep reading white space
 		for {
-			e, terr := p.ParseElement(false)
-			if terr != nil {
-				err = terr
-				return
-			}
-			// This means we are done
-			if e == nil {
+			ch, _, err = p.src.ReadRune()
+			if err == io.EOF {
+				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
 				err = nil
 				return
 			}
-			ret.Contents = append(ret.Contents, e)
+			if err != nil {
+				return
+			}
+			// If not white space, we are done
+			if !p.updatePosition(ch) {
+				p.src.UnreadRune()
+				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
+				return
+			}
+		}
+	} else {
+		ret := []rune{ch}
+		// If not white space, this is the start of an identifier
+		// read until we hit a special character
+		for {
+			ch, _, err = p.src.ReadRune()
+			if err == io.EOF {
+				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
+				err = nil
+				return
+			}
+			if err != nil {
+				return
+			}
+			if p.updatePosition(ch) || ch == '=' ||
+				ch == '{' || ch == '}' || ch == '(' ||
+				ch == ')' || ch == ',' || ch == ';' {
+				p.src.UnreadRune()
+				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
+				return
+			}
+			ret = append(ret, ch)
 		}
 	}
-
-	if t.Type == T_EQUALS {
-		// If we already parsed a string, then we shouldn't find an '=', we should
-		// find a ';'
-		if foundString {
-			err = t.Expected(";")
-			return
-		}
-
-		// Otherwise, this is definitely a declaration.  Parse the expression
-		// and the semicolon
-		ret.Value, err = p.ParseExpr()
-		if err != nil {
-			return
-		}
-
-		t, err = p.nextNonWhiteToken()
-		if err != nil {
-			return
-		}
-	}
-
-	// This should a SEMI
-	if t.Type != T_SEMI {
-		err = t.Expected(";")
-	}
-	return
 }
