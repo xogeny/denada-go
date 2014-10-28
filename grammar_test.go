@@ -5,7 +5,7 @@ import . "github.com/onsi/gomega"
 
 var config_grammar = `
 section _ "section*" {
-  set _ = _ "variable*";
+  set _ = 5 "variable*";
 }`
 
 var config_input1 = `

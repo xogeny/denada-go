@@ -3,6 +3,7 @@ package denada
 import "os"
 import "io"
 import "fmt"
+import "log"
 import "strings"
 
 // This file contains the API for the denada parser
@@ -33,6 +34,10 @@ func ParseFile(filename string) (ElementList, error) {
 }
 
 func Parse(r io.Reader) (ElementList, error) {
-	p := NewParser(r)
+	plog := log.New(os.Stderr, "", log.LstdFlags)
+	p, err := NewParser(r, plog)
+	if err != nil {
+		return nil, err
+	}
 	return p.ParseFile()
 }
