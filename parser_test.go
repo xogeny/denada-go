@@ -1,9 +1,13 @@
 package denada
 
+import "os"
+import "log"
 import "testing"
 import "strings"
 
 import . "github.com/onsi/gomega"
+
+var plog = log.New(os.Stderr, "", log.LstdFlags)
 
 var sample_noexprs = `
 class ABC() "D1" {
@@ -49,11 +53,12 @@ class Foo(x=5.0, y=1, z="This is a \"test\"", a={"key1": 5}, b=null, c=[true, fa
 }
 `
 
-func Test_YYSimpleDeclaration(t *testing.T) {
+func Test_LLSimpleDeclaration(t *testing.T) {
 	RegisterTestingT(t)
 
 	r := strings.NewReader("set x = 5 \"Description\";")
-	elems, err := Parse(r)
+	p, err := NewParser(r, plog)
+	elems, err := p.ParseFile()
 
 	Expect(err).To(BeNil())
 	Expect(len(elems)).To(Equal(1))
@@ -70,21 +75,23 @@ func Test_YYSimpleDeclaration(t *testing.T) {
 	Expect(elem.Value).To(Equal(5))
 }
 
-func Test_YYErrors(t *testing.T) {
+func Test_LLErrors(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader("set x = 5")
 
-	exp := "Parsing errors:\n  Error syntax error at line 0, column 9"
-	_, err := Parse(r)
+	p, err := NewParser(r, plog)
+	_, err = p.ParseFile()
+
 	Expect(err).ToNot(BeNil())
-	Expect(err.Error()).To(Equal(exp))
 }
 
-func Test_YYSampleInput(t *testing.T) {
+func Test_LLSampleInput(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader(sample)
 
-	el, err := Parse(r)
+	p, err := NewParser(r, plog)
+	el, err := p.ParseFile()
+
 	Expect(err).To(BeNil())
 
 	Expect(len(el)).To(Equal(3))
@@ -93,14 +100,35 @@ func Test_YYSampleInput(t *testing.T) {
 	Expect(el[2].isDefinition()).To(BeTrue())
 }
 
-func Test_YYSampleNoExprInput(t *testing.T) {
+func Test_LLSampleNoExprInput(t *testing.T) {
 	RegisterTestingT(t)
 	r := strings.NewReader(sample_noexprs)
 
-	el, err := Parse(r)
+	p, err := NewParser(r, plog)
+	el, err := p.ParseFile()
+
 	Expect(err).To(BeNil())
 
 	Expect(len(el)).To(Equal(2))
 	Expect(el[0].isDefinition()).To(BeTrue())
 	Expect(el[1].isDefinition()).To(BeTrue())
+}
+
+func Test_LLSampleJSONInput(t *testing.T) {
+	RegisterTestingT(t)
+	r := strings.NewReader(sample_exprs)
+
+	p, err := NewParser(r, plog)
+	el, err := p.ParseFile()
+
+	Expect(err).To(BeNil())
+
+	Expect(len(el)).To(Equal(8))
+	for i, e := range el {
+		if i == 7 {
+			Expect(e.isDefinition()).To(BeTrue())
+		} else {
+			Expect(e.isDefinition()).To(BeFalse())
+		}
+	}
 }

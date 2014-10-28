@@ -17,11 +17,6 @@ func listToError(l []error) error {
 	return fmt.Errorf("%s", msg)
 }
 
-func (yylex Lexer) Error(e string) {
-	errorList = append(errorList,
-		fmt.Errorf("Error %s at line %d, column %d", e, lineNumber, colNumber))
-}
-
 func ParseString(s string) (ElementList, error) {
 	r := strings.NewReader(s)
 	return Parse(r)
@@ -38,19 +33,6 @@ func ParseFile(filename string) (ElementList, error) {
 }
 
 func Parse(r io.Reader) (ElementList, error) {
-	errorList = []error{}
-	lineNumber = 0
-	colNumber = 0
-
-	lex := NewLexer(r)
-	ret := yyParse(lex)
-	if ret == 0 {
-		return _parserResult, nil
-	} else {
-		ret := []error{}
-		for _, msg := range errorList {
-			ret = append(ret, msg)
-		}
-		return nil, listToError(ret)
-	}
+	p := NewParser(r)
+	return p.ParseFile()
 }
