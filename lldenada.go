@@ -3,8 +3,12 @@ package denada
 import "io"
 import "fmt"
 import "log"
+import "bytes"
 import "strings"
 import "io/ioutil"
+import "encoding/json"
+
+import "github.com/bitly/go-simplejson"
 
 type Parser struct {
 	src        *strings.Reader
@@ -23,24 +27,26 @@ func NewParser(s io.Reader, l *log.Logger) (p *Parser, err error) {
 	return
 }
 
-func EOF(err error) bool {
-	return err == io.EOF
-}
-
 func (p *Parser) ParseFile() (ElementList, error) {
 	log.Printf(">> File")
 	ret := ElementList{}
 	for {
-		elem, err := p.ParseElement()
-		log.Printf("  -> Got element %v", elem)
-		if EOF(err) {
-			log.Printf("<< File")
-			return ret, nil
-		}
+		// Try to parse an Element
+		elem, err := p.ParseElement(true)
+
+		// If any other error
 		if err != nil {
 			log.Printf("<< File (Error: %v)", err)
 			return nil, err
+		}
+
+		// If elem is nil, that means there are no more elements to parse
+		if elem == nil {
+			log.Printf("<< File")
+			return ret, nil
 		} else {
+			log.Printf("  -> Got element %v", elem)
+			// Add element and continue
 			ret = append(ret, elem)
 		}
 	}
@@ -49,10 +55,7 @@ func (p *Parser) ParseFile() (ElementList, error) {
 func (p *Parser) ParseContents() (ElementList, error) {
 	ret := ElementList{}
 	for {
-		elem, err := p.ParseElement()
-		if EOF(err) {
-			return ret, nil
-		}
+		elem, err := p.ParseElement(false)
 		if err != nil {
 			return nil, err
 		} else {
@@ -61,78 +64,14 @@ func (p *Parser) ParseContents() (ElementList, error) {
 	}
 }
 
-type TokenType int
-
-const (
-	T_IDENTIFIER TokenType = iota
-	T_RBRACE
-	T_LBRACE
-	T_LPAREN
-	T_RPAREN
-	T_QUOTE
-	T_EQUALS
-	T_SEMI
-	T_COMMA
-	T_WHITE
-	T_UNKNOWN
-)
-
-func (tt TokenType) String() string {
-	switch tt {
-	case T_IDENTIFIER:
-		return "<identifier>"
-	case T_RBRACE:
-		return "}"
-	case T_LBRACE:
-		return "{"
-	case T_LPAREN:
-		return "("
-	case T_RPAREN:
-		return ")"
-	case T_QUOTE:
-		return "\""
-	case T_EQUALS:
-		return "="
-	case T_SEMI:
-		return ";"
-	case T_COMMA:
-		return ","
-	case T_WHITE:
-		return "<whitespace>"
-	case T_UNKNOWN:
-		fallthrough
-	default:
-		return "<???>"
-	}
-}
-
-type UnexpectedToken struct {
-	Found    Token
-	Expected string
-}
-
-func (u UnexpectedToken) Error() string {
-	return fmt.Sprintf("Expecting %s, found '%v' @ (%d, %d)", u.Expected, u.Found.Type,
-		u.Found.Line, u.Found.Column)
-}
-
-type Token struct {
-	Type   TokenType
-	String string
-	Line   int
-	Column int
-}
-
-func (t Token) Expected(expected string) UnexpectedToken {
-	return UnexpectedToken{
-		Found:    t,
-		Expected: expected,
-	}
-}
-
 func (p *Parser) nextNonWhiteToken() (t Token, err error) {
 	for {
 		t, err = p.nextToken()
+		if err != nil {
+			log.Printf("--Error while reading tokens: %v", err)
+			return
+		}
+		log.Printf("--Got Token: %v", t)
 		if t.Type != T_WHITE {
 			return
 		}
@@ -145,8 +84,12 @@ func (p *Parser) nextToken() (t Token, err error) {
 
 	// Read the first character of the token
 	ch, _, err := p.src.ReadRune()
+	if err == io.EOF {
+		t = Token{Type: T_EOF, String: "", Line: line, Column: col}
+		err = nil
+		return
+	}
 	if err != nil {
-		log.Printf("    Token -> Error: %v", err)
 		return
 	}
 
@@ -171,35 +114,27 @@ func (p *Parser) nextToken() (t Token, err error) {
 		white = true
 	case '{':
 		t = Token{Type: T_LBRACE, String: "{", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	case '}':
 		t = Token{Type: T_RBRACE, String: "}", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	case '(':
 		t = Token{Type: T_LPAREN, String: "(", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	case ')':
 		t = Token{Type: T_RPAREN, String: ")", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	case '"':
 		t = Token{Type: T_QUOTE, String: "\"", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	case '=':
 		t = Token{Type: T_EQUALS, String: "=", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	case ';':
 		t = Token{Type: T_SEMI, String: ";", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	case ',':
 		t = Token{Type: T_COMMA, String: ",", Line: line, Column: col}
-		log.Printf("    Token -> %v", t)
 		return
 	}
 	if white {
@@ -208,12 +143,10 @@ func (p *Parser) nextToken() (t Token, err error) {
 			ch, _, err = p.src.ReadRune()
 			if err == io.EOF {
 				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
-				log.Printf("    Token -> %v", t)
 				err = nil
 				return
 			}
 			if err != nil {
-				log.Printf("    Token -> Error: %v", err)
 				return
 			}
 			switch ch {
@@ -233,7 +166,6 @@ func (p *Parser) nextToken() (t Token, err error) {
 			default:
 				p.src.UnreadRune()
 				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
-				log.Printf("    Token -> %v", t)
 				return
 			}
 		}
@@ -244,19 +176,16 @@ func (p *Parser) nextToken() (t Token, err error) {
 			ch, _, err = p.src.ReadRune()
 			if err == io.EOF {
 				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
-				log.Printf("    Token -> %v", t)
 				err = nil
 				return
 			}
 			if err != nil {
-				log.Printf("    Token -> Error: %v", err)
 				return
 			}
 			if ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r' || ch == '=' ||
 				ch == '{' || ch == '}' || ch == '(' || ch == ')' || ch == ',' || ch == ';' {
 				p.src.UnreadRune()
 				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
-				log.Printf("    Token -> %v", t)
 				return
 			} else {
 				ret = append(ret, ch)
@@ -265,9 +194,69 @@ func (p *Parser) nextToken() (t Token, err error) {
 	}
 }
 
-func (p *Parser) ParseExpr() (Expr, error) {
-	panic("Unimplemented")
-	return nil, nil
+func (p *Parser) ParseExpr2() (expr Expr, err error) {
+	// Grab whatever is left of the input stream
+	left, err := ioutil.ReadAll(p.src)
+	log.Printf("left = %s", left)
+	if err != nil {
+		return
+	}
+
+	// Create a JSON decoder on the remaining bytes
+	obj := strings.NewReader(string(left))
+	jexpr, err := simplejson.NewFromReader(obj)
+	if err == nil {
+		// Read what is left and reset input stream to that
+		left, err = ioutil.ReadAll(obj)
+		log.Printf("SUCCESS: %v, left = %s", jexpr, left)
+
+		if err != nil {
+			return
+		}
+		p.src = strings.NewReader(string(left))
+	}
+
+	// TODO: Check for float, int, string
+	err = fmt.Errorf("Unrecognized expression: %s", left[0:20])
+
+	return
+}
+
+func (p *Parser) ParseExpr() (expr Expr, err error) {
+	// Grab whatever is left of the input stream
+	left, err := ioutil.ReadAll(p.src)
+	log.Printf("left = %s", left)
+	if err != nil {
+		return
+	}
+
+	// Create a JSON decoder on the remaining bytes
+	obj := strings.NewReader(string(left))
+	w := bytes.NewBuffer([]byte{})
+	tee := io.TeeReader(obj, w)
+	decoder := json.NewDecoder(tee)
+	decoder.UseNumber()
+
+	var data interface{}
+	// Try to extract a JSON object
+	err = decoder.Decode(&data)
+	if err == nil {
+		log.Printf("SUCCESS: %v", data)
+		expr = data
+		// Read what is left and reset input stream to that
+		left, err = ioutil.ReadAll(tee)
+		log.Printf("left = %s", left)
+		log.Printf("w = %s", w.String())
+		if err != nil {
+			return
+		}
+		p.src = strings.NewReader(string(left))
+	}
+
+	// TODO: Check for float, int, string
+	err = fmt.Errorf("Unrecognized expression: %s", left[0:20])
+
+	return
 }
 
 //  This is called if we've already parsed a "("
@@ -355,24 +344,53 @@ func (p *Parser) ParseString() (ret string, err error) {
 }
 
 // Returns an element if one found, nil on "}"...otherwise an error
-func (p *Parser) ParseElement() (ret *Element, err error) {
+func (p *Parser) ParseElement(parsingFile bool) (ret *Element, err error) {
 	ret = &Element{}
 
 	t, err := p.nextNonWhiteToken()
 	if err != nil {
 		return
 	}
-	if t.Type == T_RBRACE {
-		return nil, nil
+
+	if t.Type == T_EOF {
+		if parsingFile {
+			return nil, nil
+		} else {
+			err = t.Expected("definition, declaration or '}'")
+			return
+		}
 	}
 
-	log.Printf("First token: %v", t)
-	// Parse all identifiers and white space
+	if t.Type == T_RBRACE {
+		if parsingFile {
+			err = t.Expected("definition, declaration or EOF")
+			return
+		} else {
+			return nil, nil
+		}
+	}
+
+	// First thing should always be an identifier
+	if t.Type != T_IDENTIFIER {
+		err = t.Expected("definition, declaration or EOF")
+		return
+	} else {
+		ret.Qualifiers = append(ret.Qualifiers, t.String)
+	}
+
+	// Get next token
+	t, err = p.nextNonWhiteToken()
+	if err != nil {
+		return
+	}
+
+	// Parse all remaining identifiers and white space
 	for {
 		if t.Type == T_IDENTIFIER {
 			ret.Qualifiers = append(ret.Qualifiers, t.String)
 		} else if t.Type == T_LPAREN || t.Type == T_QUOTE || t.Type == T_EQUALS ||
 			t.Type == T_SEMI || t.Type == T_LBRACE {
+			// Expected next tokens
 			break
 		} else {
 			err = UnexpectedToken{
@@ -385,20 +403,16 @@ func (p *Parser) ParseElement() (ret *Element, err error) {
 		if err != nil {
 			return
 		}
-		log.Printf("Next token: %v", t)
 	}
 
-	// Check if there is a modification
+	// Check if there is a modification (declaration or definition)
 	if t.Type == T_LPAREN {
-		log.Printf("Parsing modification")
 		ret.Modifications, err = p.ParseModifications()
-		log.Printf("  err = %v", err)
 		if err != nil {
 			return
 		}
 		// Now get next token
 		t, err = p.nextNonWhiteToken()
-		log.Printf("  err = %v", err)
 		if err != nil {
 			return
 		}
@@ -410,11 +424,11 @@ func (p *Parser) ParseElement() (ret *Element, err error) {
 
 	if t.Type == T_QUOTE {
 		ret.Description, err = p.ParseString()
-		log.Printf("    Added description: '%s'", ret.Description)
 		if err != nil {
 			return
 		}
 		foundString = true
+
 		// Now get next token
 		t, err = p.nextNonWhiteToken()
 		log.Printf("  err = %v", err)
@@ -424,22 +438,20 @@ func (p *Parser) ParseElement() (ret *Element, err error) {
 	}
 
 	if t.Type == T_LBRACE {
-		log.Printf("Definitely a definition")
-		// Definition a definition, finish reading and return
+		// Definitely a definition, finish reading and return
 		ret.definition = true
 		for {
-			e, terr := p.ParseElement()
+			e, terr := p.ParseElement(false)
 			if terr != nil {
 				err = terr
 				return
 			}
-			if e != nil {
-				log.Printf("  Nested element: %v", e)
-				ret.Contents = append(ret.Contents, e)
-			} else {
+			// This means we are done
+			if e == nil {
 				err = nil
 				return
 			}
+			ret.Contents = append(ret.Contents, e)
 		}
 	}
 
@@ -450,28 +462,23 @@ func (p *Parser) ParseElement() (ret *Element, err error) {
 			err = t.Expected(";")
 			return
 		}
-		expr, terr := p.ParseExpr()
-		if terr != nil {
-			err = terr
+
+		// Otherwise, this is definitely a declaration.  Parse the expression
+		// and the semicolon
+		ret.Value, err = p.ParseExpr()
+		if err != nil {
 			return
 		}
-		ret.Value = expr
+
 		t, err = p.nextNonWhiteToken()
 		if err != nil {
 			return
 		}
-		if t.Type != T_SEMI {
-			err = t.Expected(";")
-		}
-		return
 	}
 
-	if t.Type == T_SEMI {
-		ret.definition = false
-		return
+	// This should a SEMI
+	if t.Type != T_SEMI {
+		err = t.Expected(";")
 	}
-
-	// TODO: Need to handle any remaining contingencies...error if we get here?
-	err = fmt.Errorf("Unhandled case in Element parser")
 	return
 }
