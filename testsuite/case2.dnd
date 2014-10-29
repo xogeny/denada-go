@@ -1,4 +1,4 @@
-props(grammar="config.grm", definitions=1);
+props(grammar="config.grm", definitions=1, declarations=1);
 
 section Foo "section" {
    x = 1 "variable";

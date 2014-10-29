@@ -16,6 +16,8 @@ const (
 	T_COMMA
 	T_EOF
 	T_WHITE
+	T_SLCOMMENT
+	T_MLCOMMENT
 	T_UNKNOWN
 )
 
@@ -41,6 +43,10 @@ func (tt TokenType) String() string {
 		return ","
 	case T_WHITE:
 		return "<whitespace>"
+	case T_SLCOMMENT:
+		return "<slcomment>"
+	case T_MLCOMMENT:
+		return "<mlcomment>"
 	case T_EOF:
 		return "EOF"
 	case T_UNKNOWN:

@@ -1,6 +1,8 @@
 package denada
 
 import "io"
+
+import "log"
 import "fmt"
 import "bytes"
 import "strings"
@@ -52,6 +54,7 @@ func (p *Parser) ParseElement(parsingFile bool) (ret *Element, err error) {
 	// Get first token of the element
 	t, err := p.nextNonWhiteToken()
 	if err != nil {
+		log.Printf("ParseElement is returning with error %v", err)
 		return
 	}
 
@@ -269,7 +272,7 @@ func (p *Parser) ParseExpr(modification bool) (expr *simplejson.Json, err error)
 			}
 		} else {
 			if objcount == 0 && arraycount == 0 &&
-				((white && !empty) || ch == ',' || ch == ')' || ch == ';') {
+				((white && !empty) || ch == '/' || ch == ',' || ch == ')' || ch == ';') {
 				p.src.UnreadRune()
 				p.lineNumber = l
 				p.colNumber = c
@@ -392,7 +395,8 @@ func (p *Parser) nextNonWhiteToken() (t Token, err error) {
 		if err != nil {
 			return
 		}
-		if t.Type != T_WHITE {
+		// Ignore white space and comments
+		if t.Type != T_WHITE && t.Type != T_SLCOMMENT && t.Type != T_MLCOMMENT {
 			return
 		}
 	}
@@ -419,6 +423,15 @@ func (p *Parser) updatePosition(ch rune) bool {
 	return false
 }
 
+func (p *Parser) peek() (r rune, err error) {
+	r, _, err = p.src.ReadRune()
+	p.src.UnreadRune()
+	if err != nil {
+		return
+	}
+	return
+}
+
 func (p *Parser) nextToken() (t Token, err error) {
 	// Record line number and column number at the start of this token
 	line := p.lineNumber
@@ -439,6 +452,60 @@ func (p *Parser) nextToken() (t Token, err error) {
 	white := p.updatePosition(ch)
 
 	switch ch {
+	case '/':
+		nch, perr := p.peek()
+		// Check if the next character is also a '/'
+		if perr == nil && nch == '/' {
+			// If so, read until end of line
+			comment := []rune{}
+			for {
+				nch, _, err = p.src.ReadRune()
+				if err != nil && err != io.EOF {
+					return
+				}
+				p.updatePosition(nch)
+				if err == io.EOF || nch == '\n' {
+					t = Token{
+						Type:   T_SLCOMMENT,
+						String: string(comment),
+						Line:   line,
+						Column: col,
+						File:   p.file}
+					err = nil
+					return
+				}
+				comment = append(comment, nch)
+			}
+		}
+		// Check if the next character is also a '*'
+		if perr == nil && nch == '*' {
+			// If so, read until matching */
+			comment := []rune{'/'}
+			star := false
+			for {
+				nch, _, err = p.src.ReadRune()
+				if err != nil {
+					err = fmt.Errorf("Error while reading multi-line comment: %v", err)
+					return
+				}
+				p.updatePosition(nch)
+				comment = append(comment, nch)
+				if nch == '/' && star {
+					t = Token{
+						Type:   T_MLCOMMENT,
+						String: string(comment),
+						Line:   line,
+						Column: col,
+						File:   p.file}
+					return
+				}
+				if nch == '*' {
+					star = true
+				} else {
+					star = false
+				}
+			}
+		}
 	case '{':
 		t = Token{Type: T_LBRACE, String: "{", Line: line, Column: col, File: p.file}
 		return

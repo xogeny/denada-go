@@ -20,25 +20,29 @@ func CheckFile(name string) error {
 	if len(elems) == 0 {
 		return fmt.Errorf("Empty file")
 	}
-	props, elems, err := elems.PopHead()
-	if err != nil {
-		return fmt.Errorf("Missing properties")
-	}
+
+	/*
+		props, elems, err := elems.PopHead()
+		if err != nil {
+			return fmt.Errorf("Missing properties")
+		}
+	*/
+	props := elems[0]
 
 	declsv, exists := props.Modifications["declarations"]
-	edecls := 0
+	var edecls int = 0
 	if exists {
 		edecls = declsv.MustInt(0)
 	}
 
 	defsv, exists := props.Modifications["definitions"]
-	edefs := 0
+	var edefs int = 0
 	if exists {
 		edefs = defsv.MustInt(0)
 	}
 
-	adecls := 0
-	adefs := 0
+	var adecls int = 0
+	var adefs int = 0
 	for _, e := range elems {
 		if e.isDeclaration() {
 			adecls++
@@ -53,7 +57,7 @@ func CheckFile(name string) error {
 	}
 
 	if adefs != edefs {
-		return fmt.Errorf("Expected %d declarations, found %d", edecls, adecls)
+		return fmt.Errorf("Expected %d definitions, found %d", edecls, adecls)
 	}
 
 	grmv, exists := props.Modifications["grammar"]
@@ -89,25 +93,17 @@ func Test_TestSuite(t *testing.T) {
 		if strings.HasSuffix(name, ".dnd") {
 			if strings.HasPrefix(name, "case") {
 				err := CheckFile(name)
-				/*
-					if err == nil {
-						log.Printf("Case %s: PASSED", name)
-					} else {
-						log.Printf("Case %s: Failed: %v", name, err)
-					}
-				*/
+				if err != nil {
+					log.Printf("Case %s: Failed: %v", name, err)
+				}
 				Expect(err).To(BeNil())
 				continue
 			}
 			if strings.HasPrefix(name, "ecase") {
 				err := CheckFile(name)
-				/*
-					if err != nil {
-						log.Printf("Error Case %s: PASSED", name)
-					} else {
-						log.Printf("Error Case %s: FAILED", name)
-					}
-				*/
+				if err == nil {
+					log.Printf("Error Case %s: FAILED", name)
+				}
 				Expect(err).ToNot(BeNil())
 				continue
 			}
