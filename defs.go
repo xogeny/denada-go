@@ -60,6 +60,17 @@ func (e ElementList) Definition(name string) (*Element, error) {
 	return nil, fmt.Errorf("Unable to find definition for %s", name)
 }
 
+func (e ElementList) AllElements() ElementList {
+	ret := ElementList{}
+	for _, elem := range e {
+		ret = append(ret, elem)
+		if elem.isDefinition() {
+			ret = append(ret, elem.Contents.AllElements()...)
+		}
+	}
+	return ret
+}
+
 func (e ElementList) PopHead() (*Element, ElementList, error) {
 	if len(e) == 0 {
 		return nil, e, fmt.Errorf("Cannot pop the head of an empty element list")

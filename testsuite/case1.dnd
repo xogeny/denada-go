@@ -1,3 +1,5 @@
+// Most basic syntactic example with just 2 declarations
+
 props(declarations=2);
 
 Real r;

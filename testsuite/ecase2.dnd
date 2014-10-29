@@ -1,5 +1,6 @@
 props(grammar="config.grm", definitions=2);
 
+// Error: multiple occurences of singleton qualifier
 section section Authentication "section" {
   username = "foo" "variable";
   password = "bar" "variable";

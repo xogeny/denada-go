@@ -1,10 +1,10 @@
-// Adds a tricky comment case and more grammar checking
+// Test matching of input element descriptions with and matched rule names
 
 props(grammar="config.grm", definitions=2, declarations=1) "props";
 
 section Authentication "section" {
   username = "foo" "variable";
-  password/* Not an identifier */ = "bar" "variable";
+  password/* Not an identifier */ = "bar" "assignment"; // Description doesn't match rule name
 }
 
 section DNS "section" {

@@ -1,7 +1,10 @@
-props(grammar="config.grm", definitions=1, declarations=1);
+// Checking against a grammar file with different expression types
+
+props(grammar="config.grm", definitions=1, declarations=1) "props";
 
 section Foo "section" {
    x = 1 "variable";
    y = 1.0 "variable";
    z = "test string" "variable";
+   json = {"this": "is a JSON expression!"} "variable";
 }

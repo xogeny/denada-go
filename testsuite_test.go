@@ -21,12 +21,6 @@ func CheckFile(name string) error {
 		return fmt.Errorf("Empty file")
 	}
 
-	/*
-		props, elems, err := elems.PopHead()
-		if err != nil {
-			return fmt.Errorf("Missing properties")
-		}
-	*/
 	props := elems[0]
 
 	declsv, exists := props.Modifications["declarations"]
@@ -68,6 +62,25 @@ func CheckFile(name string) error {
 			return err
 		}
 		err = Check(elems, g, false)
+		// Check if descriptions on input elements matche expected rule names
+		if err == nil {
+			for _, e := range elems.AllElements() {
+				if e.Description == "" {
+					err = fmt.Errorf("Input element %v in %s didn't have a description",
+						e, name)
+					return err
+				} else if e.Rule() == "" {
+					err = fmt.Errorf("Input element %v in %s didn't seem to match anything",
+						e, name)
+					return err
+				} else {
+					if e.Rule() != e.Description {
+						err = fmt.Errorf("Input element %v matched rule %s but description implies a match with %s", e, e.Rule(), e.Description)
+						return err
+					}
+				}
+			}
+		}
 		return err
 	}
 

@@ -6,6 +6,7 @@ section Authentication "section" {
 }
 
 section DNS "section" {
+  // Error: unexpected qualifier
   var hostname = "localhost" "variable";
   MTU = 1500 "variable";
 }

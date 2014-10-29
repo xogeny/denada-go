@@ -1,5 +1,6 @@
 props(grammar="config.grm", definitions=2);
 
+// Error: illegal qualifier 'extra'
 extra section Authentication "section" {
   username = "foo" "variable";
   password = "bar" "variable";
