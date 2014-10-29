@@ -199,7 +199,8 @@ identifiers (the ``identifier`` token in the EBNF grammar).  This is
 because they will be used as regular expressions when they are used
 within a grammar.  As such, an identifier in Denada is any sequence of
 characters that doesn't contain whitespace, a comment or the reserved
-characters ``{``, ``}``, ``(``, ``)``, ``"``, ``=``, ``;`` or ``,``.
+characters ``{``, ``}``, ``(``, ``)``, ``/``, ``"``, ``=``, ``;`` or
+``,``.
 
 There are really only two other token types in Denada.  The first is
 quoted strings (the ``string`` token in the EBNF grammar).  This is
