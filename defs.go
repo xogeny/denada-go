@@ -60,6 +60,36 @@ func (e ElementList) Definition(name string) (*Element, error) {
 	return nil, fmt.Errorf("Unable to find definition for %s", name)
 }
 
+func (e ElementList) Definitions() ElementList {
+	ret := ElementList{}
+	for _, elem := range e {
+		if elem.isDefinition() {
+			ret = append(ret, elem)
+		}
+	}
+	return ret
+}
+
+func (e ElementList) Declarations() ElementList {
+	ret := ElementList{}
+	for _, elem := range e {
+		if elem.isDeclaration() {
+			ret = append(ret, elem)
+		}
+	}
+	return ret
+}
+
+func (e ElementList) Named(name string) ElementList {
+	ret := ElementList{}
+	for _, elem := range e {
+		if elem.Name == name {
+			ret = append(ret, elem)
+		}
+	}
+	return ret
+}
+
 func (e ElementList) AllElements() ElementList {
 	ret := ElementList{}
 	for _, elem := range e {

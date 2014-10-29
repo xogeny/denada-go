@@ -262,8 +262,6 @@ func matchExpr(input *simplejson.Json, grammar *simplejson.Json) bool {
 			log.Printf("treated as literal")
 			return terr == nil && is == stype
 		}
-		log.Printf("Grammar is a literal string")
-		return false
 	}
 	mtype, err := grammar.Map()
 	if err == nil {
