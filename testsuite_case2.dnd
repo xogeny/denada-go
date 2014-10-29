@@ -1,0 +1,7 @@
+props(grammar="config.grm", definitions=1);
+
+section Foo "section" {
+   x = 1 "variable";
+   y = 1.0 "variable";
+   z = "test string" "variable";
+}

@@ -56,6 +56,17 @@ func CheckFile(name string) error {
 		return fmt.Errorf("Expected %d declarations, found %d", edecls, adecls)
 	}
 
+	grmv, exists := props.Modifications["grammar"]
+	if exists {
+		gfile := grmv.MustString()
+		g, err := ParseFile(path.Join("testsuite", gfile))
+		if err != nil {
+			return err
+		}
+		err = Check(elems, g, false)
+		return err
+	}
+
 	return nil
 }
 

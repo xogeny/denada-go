@@ -56,8 +56,13 @@ type UnexpectedToken struct {
 }
 
 func (u UnexpectedToken) Error() string {
-	return fmt.Sprintf("Expecting %s, found '%v' @ (%d, %d)", u.Expected, u.Found.Type,
-		u.Found.Line, u.Found.Column)
+	if u.Found.File != "" {
+		return fmt.Sprintf("Expecting %s, found '%v' @ (%d, %d) in %s", u.Expected, u.Found.Type,
+			u.Found.Line, u.Found.Column, u.Found.File)
+	} else {
+		return fmt.Sprintf("Expecting %s, found '%v' @ (%d, %d)", u.Expected, u.Found.Type,
+			u.Found.Line, u.Found.Column)
+	}
 }
 
 type Token struct {
@@ -65,6 +70,7 @@ type Token struct {
 	String string
 	Line   int
 	Column int
+	File   string
 }
 
 func (t Token) Expected(expected string) UnexpectedToken {

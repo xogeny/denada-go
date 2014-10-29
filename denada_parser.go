@@ -12,15 +12,16 @@ type Parser struct {
 	src        *strings.Reader
 	lineNumber int
 	colNumber  int
+	file       string
 }
 
-func NewParser(s io.Reader) (p *Parser, err error) {
+func NewParser(s io.Reader, file string) (p *Parser, err error) {
 	str, err := ioutil.ReadAll(s)
 	if err != nil {
 		return
 	}
 	src := strings.NewReader(string(str))
-	p = &Parser{src: src, lineNumber: 0, colNumber: 0}
+	p = &Parser{src: src, lineNumber: 0, colNumber: 0, file: file}
 	return
 }
 func (p *Parser) ParseFile() (ElementList, error) {
@@ -426,7 +427,7 @@ func (p *Parser) nextToken() (t Token, err error) {
 	// Read the first character of the token
 	ch, _, err := p.src.ReadRune()
 	if err == io.EOF {
-		t = Token{Type: T_EOF, String: "", Line: line, Column: col}
+		t = Token{Type: T_EOF, String: "", Line: line, Column: col, File: p.file}
 		err = nil
 		return
 	}
@@ -439,28 +440,28 @@ func (p *Parser) nextToken() (t Token, err error) {
 
 	switch ch {
 	case '{':
-		t = Token{Type: T_LBRACE, String: "{", Line: line, Column: col}
+		t = Token{Type: T_LBRACE, String: "{", Line: line, Column: col, File: p.file}
 		return
 	case '}':
-		t = Token{Type: T_RBRACE, String: "}", Line: line, Column: col}
+		t = Token{Type: T_RBRACE, String: "}", Line: line, Column: col, File: p.file}
 		return
 	case '(':
-		t = Token{Type: T_LPAREN, String: "(", Line: line, Column: col}
+		t = Token{Type: T_LPAREN, String: "(", Line: line, Column: col, File: p.file}
 		return
 	case ')':
-		t = Token{Type: T_RPAREN, String: ")", Line: line, Column: col}
+		t = Token{Type: T_RPAREN, String: ")", Line: line, Column: col, File: p.file}
 		return
 	case '"':
-		t = Token{Type: T_QUOTE, String: "\"", Line: line, Column: col}
+		t = Token{Type: T_QUOTE, String: "\"", Line: line, Column: col, File: p.file}
 		return
 	case '=':
-		t = Token{Type: T_EQUALS, String: "=", Line: line, Column: col}
+		t = Token{Type: T_EQUALS, String: "=", Line: line, Column: col, File: p.file}
 		return
 	case ';':
-		t = Token{Type: T_SEMI, String: ";", Line: line, Column: col}
+		t = Token{Type: T_SEMI, String: ";", Line: line, Column: col, File: p.file}
 		return
 	case ',':
-		t = Token{Type: T_COMMA, String: ",", Line: line, Column: col}
+		t = Token{Type: T_COMMA, String: ",", Line: line, Column: col, File: p.file}
 		return
 	}
 
@@ -469,7 +470,7 @@ func (p *Parser) nextToken() (t Token, err error) {
 		for {
 			ch, _, err = p.src.ReadRune()
 			if err == io.EOF {
-				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
+				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col, File: p.file}
 				err = nil
 				return
 			}
@@ -484,7 +485,7 @@ func (p *Parser) nextToken() (t Token, err error) {
 				p.src.UnreadRune()
 				p.lineNumber = l
 				p.colNumber = c
-				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col}
+				t = Token{Type: T_WHITE, String: " ", Line: line, Column: col, File: p.file}
 				return
 			}
 		}
@@ -495,7 +496,7 @@ func (p *Parser) nextToken() (t Token, err error) {
 		for {
 			ch, _, err = p.src.ReadRune()
 			if err == io.EOF {
-				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
+				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col, File: p.file}
 				err = nil
 				return
 			}
@@ -512,7 +513,7 @@ func (p *Parser) nextToken() (t Token, err error) {
 				p.src.UnreadRune()
 				p.lineNumber = l
 				p.colNumber = c
-				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col}
+				t = Token{Type: T_IDENTIFIER, String: string(ret), Line: line, Column: col, File: p.file}
 				return
 			}
 			ret = append(ret, ch)

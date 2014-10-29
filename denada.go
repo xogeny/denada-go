@@ -29,11 +29,15 @@ func ParseFile(filename string) (ElementList, error) {
 	}
 	defer r.Close()
 
-	return Parse(r)
+	p, err := NewParser(r, filename)
+	if err != nil {
+		return nil, err
+	}
+	return p.ParseFile()
 }
 
 func Parse(r io.Reader) (ElementList, error) {
-	p, err := NewParser(r)
+	p, err := NewParser(r, "")
 	if err != nil {
 		return nil, err
 	}
