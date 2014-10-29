@@ -7,11 +7,11 @@ in the Go language.
 
 ## TL;DR
 
-Denada allows you to very quickly create a DSL for expressing data and
-structure.  It has the advantage (in my opinion) over XML and/or JSON
-that it allows you to formulate a DSL that is human readable and
-provide better diagnostic error messages.  Defining a grammar for your
-DSL is super easy.
+Denada allows you to very quickly create a DSL for expressing specific
+data and/or structure.  It has the advantage (in my opinion) over XML
+and/or JSON that it allows you to formulate a DSL that is human
+readable and provide better diagnostic error messages.  Defining a
+grammar for your DSL is super easy.
 
 ## Background
 
