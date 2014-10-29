@@ -574,7 +574,7 @@ func (p *Parser) nextToken() (t Token, err error) {
 			l := p.lineNumber
 			c := p.colNumber
 
-			if p.updatePosition(ch) || ch == '=' ||
+			if p.updatePosition(ch) || ch == '=' || ch == '/' ||
 				ch == '{' || ch == '}' || ch == '(' ||
 				ch == ')' || ch == ',' || ch == ';' {
 				p.src.UnreadRune()

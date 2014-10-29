@@ -1,8 +1,10 @@
 /* This check case is to check comment parsing */
 
-props(declarations=2, definitions=1 /*, ignored=5 */);
+props(declarations=3, definitions=1 /*, ignored=5 */);
 
 definition /* With a few comments */ between /* Other things */ (attr=5/* everwhere */) {
 }
+
+var y/* Not an identifier */ = 2;
 
 var x = 5; // This should be ignored

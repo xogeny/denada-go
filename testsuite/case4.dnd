@@ -2,7 +2,7 @@ props(grammar="config.grm", definitions=2, declarations=1);
 
 section Authentication "section" {
   username = "foo" "variable";
-  password = "bar" "variable";
+  password/* Not an identifier */ = "bar" "variable";
 }
 
 section DNS "section" {
