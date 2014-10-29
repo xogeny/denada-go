@@ -1,5 +1,5 @@
-props(grammar?=1, definitions?=1, declarations?=1) "props";
+props(grammar?="$string", definitions?="$int", declarations?={"type": "integer"}) "props";
 
 section _ "section*" {
-    _ = 1 "variable*";
+    _ = "$_" "variable*";
 }

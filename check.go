@@ -5,6 +5,7 @@ import "regexp"
 import "log"
 
 import "github.com/bitly/go-simplejson"
+import "github.com/xeipuuv/gojsonschema"
 
 func Check(input ElementList, grammar ElementList, diag bool) error {
 	return CheckContents(input, grammar, diag, "")
@@ -213,9 +214,68 @@ func matchModifications(input *Element, grammar *Element) bool {
 	return true
 }
 
-// TODO: Implement this (use JSON schema?)
+// Validation rules:
+//   Grammar expr is:
+//     String that starts with $ -> Look for type match
+//     String (without $) -> Exact match
+//     Object -> Treat object as a JSON schema and validate input with it
+//     Otherwise -> No match
 func matchExpr(input *simplejson.Json, grammar *simplejson.Json) bool {
-	return true
+	if grammar == nil && input == nil {
+		return true
+	}
+	if grammar == nil || input == nil {
+		log.Printf("Grammar and input are both nil")
+		return false
+	}
+	stype, err := grammar.String()
+	if err == nil {
+		switch stype {
+		case "$_":
+			return true
+		case "$string":
+			_, terr := input.String()
+			if terr != nil {
+				log.Printf("Input wasn't a string")
+			}
+			return terr == nil
+		case "$bool":
+			_, terr := input.Bool()
+			if terr != nil {
+				log.Printf("Input wasn't a bool")
+			}
+			return terr == nil
+		case "$int":
+			_, terr := input.Int64()
+			if terr != nil {
+				log.Printf("Input wasn't an int")
+			}
+			return terr == nil
+		case "$number":
+			_, terr := input.Float64()
+			if terr != nil {
+				log.Printf("Input wasn't a number")
+			}
+			return terr == nil
+		default:
+			is, terr := input.String()
+			log.Printf("treated as literal")
+			return terr == nil && is == stype
+		}
+		log.Printf("Grammar is a literal string")
+		return false
+	}
+	mtype, err := grammar.Map()
+	if err == nil {
+		schema, err := gojsonschema.NewJsonSchemaDocument(mtype)
+		if err != nil {
+			log.Printf("Invalid schema in grammar: %v", mtype)
+			return false
+		}
+		result := schema.Validate(input)
+		return result.Valid()
+	}
+	return false
 }
 
 func matchElement(input *Element, grammar *Element,
