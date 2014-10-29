@@ -57,7 +57,7 @@ func CheckFile(name string) error {
 	}
 
 	if adefs != edefs {
-		return fmt.Errorf("Expected %d definitions, found %d", edecls, adecls)
+		return fmt.Errorf("Expected %d definitions, found %d", edefs, adefs)
 	}
 
 	grmv, exists := props.Modifications["grammar"]

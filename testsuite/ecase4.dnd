@@ -1,0 +1,11 @@
+props(grammar="config.grm", definitions=2);
+
+section Authentication "section" {
+  username = "foo" "variable";
+  password = "bar" "variable";
+}
+
+section DNS "section" {
+  var hostname = "localhost" "variable";
+  MTU = 1500 "variable";
+}
