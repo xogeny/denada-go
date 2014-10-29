@@ -1,3 +1,5 @@
+props(grammar?=1, definitions?=1, declarations?=1) "props";
+
 section _ "section*" {
-    _ = 1 "variable*"
+    _ = 1 "variable*";
 }
