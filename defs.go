@@ -12,12 +12,8 @@ type Element struct {
 	Name          string
 	Description   string
 	Modifications Modifications
-
-	/* For definitions */
-	Contents ElementList
-
-	/* For declarations */
-	Value *simplejson.Json
+	Contents      ElementList      // Used by definitions
+	Value         *simplejson.Json // Used by declarations
 
 	rule       string
 	definition bool
@@ -62,6 +58,15 @@ func (e ElementList) Definition(name string) (*Element, error) {
 		}
 	}
 	return nil, fmt.Errorf("Unable to find definition for %s", name)
+}
+
+func (e ElementList) PopHead() (*Element, ElementList, error) {
+	if len(e) == 0 {
+		return nil, e, fmt.Errorf("Cannot pop the head of an empty element list")
+	}
+	ret := e[0]
+	e = e[1:]
+	return ret, e, nil
 }
 
 func MakeElementList() ElementList {

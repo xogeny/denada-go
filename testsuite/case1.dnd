@@ -1,0 +1,3 @@
+props(grammar="", declarations=1);
+
+Real r;

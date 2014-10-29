@@ -1,13 +1,9 @@
 package denada
 
-import "os"
-import "log"
 import "testing"
 import "strings"
 
 import . "github.com/onsi/gomega"
-
-var plog = log.New(os.Stderr, "", log.LstdFlags)
 
 var sample_noexprs = `
 class ABC() "D1" {
