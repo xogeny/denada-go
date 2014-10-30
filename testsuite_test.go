@@ -9,6 +9,28 @@ import "strings"
 
 import . "github.com/onsi/gomega"
 
+func ReparseFile(name string) error {
+	filename := path.Join("testsuite", name)
+
+	elems, err := ParseFile(filename)
+	if err != nil {
+		return err
+	}
+
+	str := Unparse(elems)
+
+	relems, err := ParseString(str)
+	if err != nil {
+		return fmt.Errorf("Error in unparsed code: %v", err)
+	}
+
+	err = elems.Equals(relems)
+	if err != nil {
+		return fmt.Errorf("Inequality in reparsing of %s: %v", filename, err)
+	}
+	return nil
+}
+
 func CheckFile(name string) error {
 	filename := path.Join("testsuite", name)
 
@@ -110,6 +132,10 @@ func Test_TestSuite(t *testing.T) {
 					log.Printf("Case %s: Failed: %v", name, err)
 				}
 				Expect(err).To(BeNil())
+				err = ReparseFile(name)
+				if err != nil {
+					log.Printf("Case %s: Reparse failed: %v", name, err)
+				}
 				continue
 			}
 			if strings.HasPrefix(name, "ecase") {
