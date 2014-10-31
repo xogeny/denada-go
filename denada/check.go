@@ -16,6 +16,7 @@ func (f CheckCommand) Execute(args []string) error {
 	}
 
 	ifile := f.Positional.Input
+
 	elems, err := denada.ParseFile(ifile)
 	if err != nil {
 		return fmt.Errorf("Error parsing input file %s: %v", ifile, err)

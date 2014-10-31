@@ -19,6 +19,28 @@ type Element struct {
 	definition bool
 }
 
+func (e Element) Clone() *Element {
+	// TODO: Clone modifications and qualifiers
+
+	children := []*Element{}
+	if e.Contents != nil {
+		children = append(children, e.Contents...)
+	} else {
+		children = nil
+	}
+
+	return &Element{
+		Qualifiers:    e.Qualifiers,
+		Name:          e.Name,
+		Description:   e.Description,
+		Modifications: e.Modifications,
+		Contents:      children,
+		Value:         e.Value,
+		rule:          e.rule,
+		definition:    e.definition,
+	}
+}
+
 func (e Element) String() string {
 	ret := ""
 	for _, q := range e.Qualifiers {
@@ -59,6 +81,15 @@ func equalValues(l *simplejson.Json, r *simplejson.Json) (bool, error) {
 		return false, err
 	}
 	return string(lbytes) == string(rbytes), nil
+}
+
+func (e *Element) Append(children ...*Element) error {
+	if e.isDefinition() {
+		e.Contents = append(e.Contents, children...)
+		return nil
+	} else {
+		return fmt.Errorf("Attempted to append elements to a declaration")
+	}
 }
 
 func (e Element) Equals(o Element) error {
@@ -134,10 +165,14 @@ func (e Element) Equals(o Element) error {
 
 type ElementList []*Element
 
-func (e ElementList) Definition(name string) (*Element, error) {
+func (e ElementList) Definition(name string, children ...string) (*Element, error) {
 	for _, d := range e {
 		if d.isDefinition() && d.Name == name {
-			return d, nil
+			if len(children) == 0 {
+				return d, nil
+			} else {
+				return d.Contents.Definition(children[0], children[1:]...)
+			}
 		}
 	}
 	return nil, fmt.Errorf("Unable to find definition for %s", name)

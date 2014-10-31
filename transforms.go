@@ -43,15 +43,9 @@ func ImportTransform(root ElementList) (ret ElementList, err error) {
 				if err != nil {
 					return nil, err
 				}
-				newe := Element{
-					Qualifiers:    e.Qualifiers,
-					Name:          e.Name,
-					Description:   e.Description,
-					Modifications: e.Modifications,
-					Contents:      newchildren,
-					definition:    true,
-				}
-				ret = append(ret, &newe)
+				newe := e.Clone()
+				newe.Contents = newchildren
+				ret = append(ret, newe)
 			} else {
 				ret = append(ret, e)
 			}

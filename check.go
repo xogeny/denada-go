@@ -15,6 +15,8 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 	// Create a list of errors for this context
 	ret := []error{}
 
+	var likely error
+
 	// TODO: Handle multiple grammar nodes with the same rule name
 
 	// Loop over grammar rules
@@ -73,8 +75,18 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 				}
 			} else {
 				if diag {
-					log.Printf("%sInput %s did not match %s because %s", prefix, in.String(),
+					log.Printf("%sInput %s did not match %s because\n%s", prefix, in.String(),
 						rule.Name, ematch.Error())
+				}
+				if len(grammar) == 1 {
+					return fmt.Errorf(
+						"Input '%v' should have matched '%v' but didn't because %v",
+						in, g, ematch)
+				}
+				if in.Name == g.Name {
+					likely = fmt.Errorf(
+						"Likely problem '%v' should have match '%v' but didn't because %v",
+						in, g, ematch)
 				}
 			}
 		}
@@ -105,7 +117,11 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 	if len(ret) == 0 {
 		return nil
 	} else {
-		return listToError(ret)
+		if likely == nil {
+			return listToError(ret)
+		} else {
+			return fmt.Errorf("%s\nAlternative reasons: %s", likely, listToError(ret))
+		}
 	}
 }
 
@@ -159,7 +175,7 @@ func matchQualifiers(input *Element, grammar *Element) bool {
 	return true
 }
 
-func matchModifications(input *Element, grammar *Element) bool {
+func matchModifications(input *Element, grammar *Element, diag bool) bool {
 	// Create a map to keep track of which modification keys on the input
 	// element find a match
 	imatch := map[string]bool{}
@@ -186,7 +202,7 @@ func matchModifications(input *Element, grammar *Element) bool {
 			matched := matchString(i, rule.Name)
 			if matched {
 				// If so, check if the expressions match
-				if matchExpr(ie, ge) {
+				if matchExpr(ie, ge, diag) {
 					// If so, this input is matched and so is the grammar rule
 					imatch[i] = true
 					count++
@@ -220,12 +236,14 @@ func matchModifications(input *Element, grammar *Element) bool {
 //     String (without $) -> Exact match
 //     Object -> Treat object as a JSON schema and validate input with it
 //     Otherwise -> No match
-func matchExpr(input *simplejson.Json, grammar *simplejson.Json) bool {
+func matchExpr(input *simplejson.Json, grammar *simplejson.Json, diag bool) bool {
 	if grammar == nil && input == nil {
 		return true
 	}
 	if grammar == nil || input == nil {
-		log.Printf("Grammar and input are both nil")
+		if diag {
+			log.Printf("Grammar was %v while input was %v", grammar, nil)
+		}
 		return false
 	}
 	stype, err := grammar.String()
@@ -235,25 +253,25 @@ func matchExpr(input *simplejson.Json, grammar *simplejson.Json) bool {
 			return true
 		case "$string":
 			_, terr := input.String()
-			if terr != nil {
+			if terr != nil && diag {
 				log.Printf("Input wasn't a string")
 			}
 			return terr == nil
 		case "$bool":
 			_, terr := input.Bool()
-			if terr != nil {
+			if terr != nil && diag {
 				log.Printf("Input wasn't a bool")
 			}
 			return terr == nil
 		case "$int":
 			_, terr := input.Int64()
-			if terr != nil {
+			if terr != nil && diag {
 				log.Printf("Input wasn't an int")
 			}
 			return terr == nil
 		case "$number":
 			_, terr := input.Float64()
-			if terr != nil {
+			if terr != nil && diag {
 				log.Printf("Input wasn't a number")
 			}
 			return terr == nil
@@ -267,7 +285,9 @@ func matchExpr(input *simplejson.Json, grammar *simplejson.Json) bool {
 	if err == nil {
 		schema, err := gojsonschema.NewJsonSchemaDocument(mtype)
 		if err != nil {
-			log.Printf("Invalid schema in grammar: %v", mtype)
+			if diag {
+				log.Printf("Invalid schema in grammar: %v", mtype)
+			}
 			return false
 		}
 		result := schema.Validate(input)
@@ -303,7 +323,7 @@ func matchElement(input *Element, grammar *Element,
 			// If the input is a declaration but the grammar is a definition, no match
 			return fmt.Errorf("Element type mismatch")
 		}
-		if !matchExpr(input.Value, grammar.Value) {
+		if !matchExpr(input.Value, grammar.Value, diag) {
 			return fmt.Errorf("Value pattern mismatch")
 		}
 	}
@@ -313,7 +333,7 @@ func matchElement(input *Element, grammar *Element,
 			grammar.Qualifiers)
 	}
 
-	if !matchModifications(input, grammar) {
+	if !matchModifications(input, grammar, diag) {
 		return fmt.Errorf("Modification mismatch (%v vs %v)", input.Modifications,
 			grammar.Modifications)
 	}

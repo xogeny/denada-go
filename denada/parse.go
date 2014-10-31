@@ -6,7 +6,7 @@ import "github.com/xogeny/denada-go"
 
 type ParseCommand struct {
 	Positional struct {
-		Term string `description:"Input file"`
+		Input string `description:"Input file"`
 	} `positional-args:"true" required:"true"`
 	Import bool `short:"i" long:"import" description:"Expand imports"`
 	Echo   bool `short:"e" long:"echo" description:"Echo parsed data"`
@@ -17,7 +17,13 @@ func (f ParseCommand) Execute(args []string) error {
 		return fmt.Errorf("Too many arguments")
 	}
 
-	file := f.Positional.Term
+	file := f.Positional.Input
+
+	err := os.Chdir(path.Dir(file))
+	if err != nil {
+		return fmt.Errorf("Error changing directory to %s: %v", path.Dir(file), err)
+	}
+
 	elems, err := denada.ParseFile(file)
 	if err != nil {
 		return fmt.Errorf("Error parsing input file %s: %v", file, err)
