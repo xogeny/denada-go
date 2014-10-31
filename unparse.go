@@ -62,7 +62,7 @@ func unparseElement(e Element, prefix string, w io.Writer) {
 		if e.Contents != nil {
 			unparse(e.Contents, prefix+"  ", w)
 		}
-		fmt.Fprintf(w, "}")
+		fmt.Fprintf(w, "%s}", prefix)
 	} else {
 		if e.Value != nil {
 			estr := unparseValue(e.Value, prefix)
