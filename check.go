@@ -19,21 +19,15 @@ type matchInfo struct {
 
 func CheckContents(input ElementList, grammar ElementList, diag bool,
 	prefix string, parentRule string) error {
-	// Create a list of errors for this context
-	ret := []error{}
 
-	var likely error
-
-	// TODO: Handle multiple grammar nodes with the same rule name
-
+	// Initialize data associated with rule matching
 	counts := map[string]*matchInfo{}
 
-	// Loop over grammar rules
+	// Loop over grammar rules and record counts information
 	for _, g := range grammar {
 		// Make sure grammar element has a (rule) description
 		if g.Description == "" {
-			ret = append(ret, fmt.Errorf("Grammar element %s has no description", g.String()))
-			continue
+			return fmt.Errorf("Grammar element %s has no description", g.String())
 		}
 
 		// Parse the rule information from the description
@@ -42,8 +36,7 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 		// If there is an error in the rule description, add an error and
 		// skip this grammar element
 		if err != nil {
-			ret = append(ret, err)
-			continue
+			return fmt.Errorf("Error in rule description: %v", err)
 		}
 
 		mi, exists := counts[rule.Name]
@@ -56,14 +49,23 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 		} else {
 			counts[rule.Name] = &matchInfo{count: 0, rule: rule, desc: g.Description}
 		}
+	}
 
-		// Now, loop over all the actual input elements and see if they match
-		// any of the rules
-		for _, in := range input {
+	// Now, loop over all the actual input elements and see if they match
+	// any of the rules
+	for _, in := range input {
+		var likely error = nil
+		ierrs := []error{}
+		for _, g := range grammar {
+			// Parse the rule information from the description (ignore error
+			// because we already checked that)
+			rule, _ := ParseRule(g.Description)
+
 			// Normally, if we find a match in matchElement, we'll use that
 			// matching rules contents as the rules to apply to the matching
 			// inputs children...
 			context := g.Contents
+
 			if rule.Recursive {
 				// ...but if the rule is recursive, we choose the same rules
 				// as we are currently using at this level
@@ -90,9 +92,9 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 					if diag {
 						log.Printf("%sInput %s already matched %s", prefix, in.String(), in.rule)
 					}
-					// If so, add an error
-					ret = append(ret, fmt.Errorf("Element %s matched rule %s and %s",
-						in.String(), in.rule, rule.Name))
+					// TODO: Just match first one and move on?
+					return fmt.Errorf("Element %s matched rule %s and %s",
+						in.String(), in.rule, rule.Name)
 				}
 			} else {
 				if diag {
@@ -109,6 +111,14 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 				if in.Name == g.Name {
 					likely = ematch
 				}
+				ierrs = append(ierrs, ematch)
+			}
+		}
+		if in.rule == "" {
+			if likely == nil {
+				return fmt.Errorf("No match for element %v because %v", in, listToError(ierrs))
+			} else {
+				return likely
 			}
 		}
 	}
@@ -116,32 +126,17 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 	// Check to make sure that all rules were matched the correct number
 	// of times.
 	for _, mi := range counts {
+		rerrs := []error{}
 		err := mi.rule.checkCount(mi.count)
 		if err != nil {
-			ret = append(ret, err)
+			rerrs = append(rerrs, err)
+		}
+		if len(rerrs) > 0 {
+			return listToError(rerrs)
 		}
 	}
 
-	// Finally, look over all input elements and make sure they matched at least
-	// one grammar rule
-	for _, in := range input {
-		if in.rule == "" {
-			// If not, add an error
-			msg := fmt.Sprintf("Element %s didn't match any rule", in.String())
-			ret = append(ret, fmt.Errorf(msg))
-		}
-	}
-
-	// Return any errors that were found in this context
-	if len(ret) == 0 {
-		return nil
-	} else {
-		if likely == nil {
-			return listToError(ret)
-		} else {
-			return fmt.Errorf("%s\nAlternative reasons: %s", likely, listToError(ret))
-		}
-	}
+	return nil
 }
 
 func matchString(input string, grammar string) bool {
@@ -333,7 +328,7 @@ func matchElement(input *Element, grammar *Element,
 	if input.isDefinition() {
 		if grammar.isDeclaration() {
 			// If the input is a definition but the grammar is a declaration, no match
-			return fmt.Errorf("Element type mismatch")
+			return fmt.Errorf("Element type mismatch between %v and %v", input, grammar)
 		}
 		cerr := CheckContents(input.Contents, context, diag, prefix+"  ", parentRule)
 		if cerr != nil {
