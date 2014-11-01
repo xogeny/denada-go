@@ -1,0 +1,31 @@
+props(grammar?="$string", definitions?="$int", declarations?={"type": "integer"}) "props";
+
+section _ "section+" {
+  array = {
+    "type": "array",
+    "minItems": 1,
+    "uniqueItems": false
+  } "array*";
+/*
+  array = {
+    "type": "array",
+    "minItems": 1,
+    "items": { "type": "string" },
+    "uniqueItems": false
+  } "array*";
+*/
+
+  vector = {
+    "type": "array",
+    "minItems": 1,
+    "items": { "type": "number" },
+    "uniqueItems": false
+  } "vector*";
+
+  mod(value={
+    "type": "array",
+    "minItems": 0,
+    "items": { "type": "string" },
+    "uniqueItems": false
+  }) "mod*";
+}

@@ -1,0 +1,11 @@
+// Some checks against a more complex JSON Schema set of rules
+// 
+
+props(grammar="schema.grm", definitions=1, declarations=1) "props";
+
+section A "section" {
+  array = ["Hello"] "section.array";
+//  vector = [0, 1.0, 3.0] "section.vectory";
+//  mod(value=["this", "that"]) "section.mod";
+}
+
