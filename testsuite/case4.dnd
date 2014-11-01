@@ -3,11 +3,11 @@
 props(grammar="config.grm", definitions=2, declarations=1) "props";
 
 section Authentication "section" {
-  username = "foo" "variable";
-  password/* Not an identifier */ = "bar" "variable";
+  username = "foo" "section.variable";
+  password/* Not an identifier */ = "bar" "section.variable";
 }
 
 section DNS "section" {
-  hostname = "localhost" "variable";
-  MTU = 1500 "variable";
+  hostname = "localhost" "section.variable";
+  MTU = 1500 "section.variable";
 }

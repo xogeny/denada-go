@@ -85,7 +85,7 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 					if diag {
 						log.Printf("%sInput %s matched %s", prefix, in.String(), rule.Name)
 					}
-					in.rule = rule.Name
+					in.rule = path
 				} else {
 					if diag {
 						log.Printf("%sInput %s already matched %s", prefix, in.String(), in.rule)

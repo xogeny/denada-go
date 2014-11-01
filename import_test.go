@@ -32,10 +32,10 @@ scoped {
   props(grammar="config.grm", definitions=1, declarations=1) "props";
 
   section Foo "section" {
-     x = 1 "variable";
-     y = 1.0 "variable";
-     z = "test string" "variable";
-     json = {"this": "is a JSON expression!"} "variable";
+     x = 1 "section.variable";
+     y = 1.0 "section.variable";
+     z = "test string" "section.variable";
+     json = {"this": "is a JSON expression!"} "section.variable";
   }
 }
 `
