@@ -7,6 +7,7 @@ import "fmt"
 import "bytes"
 import "strings"
 import "io/ioutil"
+import "encoding/json"
 
 import "github.com/bitly/go-simplejson"
 
@@ -226,6 +227,14 @@ func (p *Parser) ParseContents() (ElementList, error) {
 	}
 }
 
+// Silly function to work around the fact that you can't
+// build a simplejson.Json object from an existing interface{}
+func makeJson(data interface{}) *simplejson.Json {
+	tmp := simplejson.New()
+	tmp.Set("tmp", data)
+	return tmp.Get("tmp")
+}
+
 func (p *Parser) ParseExpr(modification bool) (expr *simplejson.Json, err error) {
 	line := p.lineNumber
 	col := p.colNumber
@@ -276,11 +285,22 @@ func (p *Parser) ParseExpr(modification bool) (expr *simplejson.Json, err error)
 				p.src.UnreadRune()
 				p.lineNumber = l
 				p.colNumber = c
-				expr, err = simplejson.NewJson(w.Bytes())
+
+				// First, I use Go's native json encoding
+				var data interface{}
+				err = json.Unmarshal(w.Bytes(), &data)
 				if err != nil {
 					err = fmt.Errorf("Error parsing expression starting @ (L%d, C%d): %v",
 						line+1, col+1, err)
 				}
+
+				// Now, convert it into a simplejson.Json object for
+				// convenient access later.  I don't use the
+				// simplejson parsing routines because they turn on
+				// "UseNumber" which stores integers as strings.
+				// This, in turn, messes up JSON schema
+				// representation.
+				expr = makeJson(data)
 				return
 			}
 			if ch == '"' {
