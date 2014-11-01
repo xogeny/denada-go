@@ -2,6 +2,7 @@ package main
 
 import "os"
 import "fmt"
+import "path"
 import "github.com/xogeny/denada-go"
 
 type ParseCommand struct {
