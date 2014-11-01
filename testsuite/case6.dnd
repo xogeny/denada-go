@@ -1,0 +1,6 @@
+// Checks support for multiple rules with the same name assuming their
+// cardinality matches
+
+props(grammar="multi.grm", definitions=0, declarations=2) "props";
+
+set X "variable";

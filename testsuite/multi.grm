@@ -1,0 +1,4 @@
+props(grammar?="$string", definitions?="$int", declarations?={"type": "integer"}) "props";
+
+var _ "variable?";
+set _ "variable?";

@@ -11,6 +11,12 @@ func Check(input ElementList, grammar ElementList, diag bool) error {
 	return CheckContents(input, grammar, diag, "")
 }
 
+type matchInfo struct {
+	count int
+	rule  RuleInfo
+	desc  string
+}
+
 func CheckContents(input ElementList, grammar ElementList, diag bool, prefix string) error {
 	// Create a list of errors for this context
 	ret := []error{}
@@ -19,11 +25,10 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 
 	// TODO: Handle multiple grammar nodes with the same rule name
 
+	counts := map[string]*matchInfo{}
+
 	// Loop over grammar rules
 	for _, g := range grammar {
-		// Initialize how many matches have been made for this rule
-		count := 0
-
 		// Make sure grammar element has a (rule) description
 		if g.Description == "" {
 			ret = append(ret, fmt.Errorf("Grammar element %s has no description", g.String()))
@@ -38,6 +43,17 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 		if err != nil {
 			ret = append(ret, err)
 			continue
+		}
+
+		mi, exists := counts[rule.Name]
+		if exists {
+			if rule.Name != mi.rule.Name || rule.Recursive != mi.rule.Recursive ||
+				rule.Cardinality != mi.rule.Cardinality {
+				return fmt.Errorf("Unmatching rules with same name: %s vs %s",
+					g.Description, mi.desc)
+			}
+		} else {
+			counts[rule.Name] = &matchInfo{count: 0, rule: rule, desc: g.Description}
 		}
 
 		// Now, loop over all the actual input elements and see if they match
@@ -56,7 +72,7 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
-				count++
+				counts[rule.Name].count++
 
 				// Then check to see if this input has matched any previous rules
 				if in.rule == "" {
@@ -90,12 +106,13 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 				}
 			}
 		}
+	}
 
-		// Now that we have checked all inputs in this context, check to see if the
-		// cardinality of this grammar element was met
-		err = rule.checkCount(count)
+	// Check to make sure that all rules were matched the correct number
+	// of times.
+	for _, mi := range counts {
+		err := mi.rule.checkCount(mi.count)
 		if err != nil {
-			// If not, add an error
 			ret = append(ret, err)
 		}
 	}
