@@ -4,16 +4,9 @@ section _ "section+" {
   array = {
     "type": "array",
     "minItems": 1,
-    "uniqueItems": false
-  } "array*";
-/*
-  array = {
-    "type": "array",
-    "minItems": 1,
     "items": { "type": "string" },
     "uniqueItems": false
   } "array*";
-*/
 
   vector = {
     "type": "array",
