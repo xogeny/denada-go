@@ -2,6 +2,7 @@ package denada
 
 import "testing"
 import "strings"
+import "encoding/json"
 
 import . "github.com/onsi/gomega"
 
@@ -106,6 +107,35 @@ func Test_SampleNoExprInput(t *testing.T) {
 	Expect(len(el)).To(Equal(2))
 	Expect(el[0].isDefinition()).To(BeTrue())
 	Expect(el[1].isDefinition()).To(BeTrue())
+}
+
+func Test_JsonTypes(t *testing.T) {
+	var expr interface{}
+	str := `{"minItems": 1}`
+	err := json.Unmarshal([]byte(str), &expr)
+	Expect(err).To(BeNil())
+	asmap, ok := expr.(map[string]interface{})
+	Expect(ok).To(Equal(true))
+	v, exists := asmap["minItems"]
+	Expect(exists).To(Equal(true))
+	Expect(v).To(Equal(1.0))
+}
+
+func Test_NumbersInExpr(t *testing.T) {
+	elems, err := ParseString(`var x = {"minItems": 1 };`)
+	Expect(err).To(BeNil())
+	e := elems[0]
+	v := e.Value
+
+	asmap, err := v.Map()
+	Expect(err).To(BeNil())
+
+	mif, exists := asmap["minItems"]
+	Expect(exists).To(Equal(true))
+	Expect(mif).To(Equal(1.0))
+
+	mi := v.Get("minItems").MustInt()
+	Expect(mi).To(Equal(1))
 }
 
 func Test_SampleJSONInput(t *testing.T) {
