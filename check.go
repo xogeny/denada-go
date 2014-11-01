@@ -8,7 +8,7 @@ import "github.com/bitly/go-simplejson"
 import "github.com/xeipuuv/gojsonschema"
 
 func Check(input ElementList, grammar ElementList, diag bool) error {
-	return CheckContents(input, grammar, diag, "")
+	return CheckContents(input, grammar, diag, "", "")
 }
 
 type matchInfo struct {
@@ -17,7 +17,8 @@ type matchInfo struct {
 	desc  string
 }
 
-func CheckContents(input ElementList, grammar ElementList, diag bool, prefix string) error {
+func CheckContents(input ElementList, grammar ElementList, diag bool,
+	prefix string, parentRule string) error {
 	// Create a list of errors for this context
 	ret := []error{}
 
@@ -68,7 +69,11 @@ func CheckContents(input ElementList, grammar ElementList, diag bool, prefix str
 				// as we are currently using at this level
 				context = grammar
 			}
-			ematch := matchElement(in, g, context, diag, prefix)
+			path := parentRule + "." + rule.Name
+			if parentRule == "" {
+				path = rule.Name
+			}
+			ematch := matchElement(in, g, context, diag, prefix, path)
 			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
@@ -314,7 +319,7 @@ func matchExpr(input *simplejson.Json, grammar *simplejson.Json, diag bool) bool
 }
 
 func matchElement(input *Element, grammar *Element,
-	context ElementList, diag bool, prefix string) error {
+	context ElementList, diag bool, prefix string, parentRule string) error {
 	// Check if the names match
 	matched := matchString(input.Name, grammar.Name)
 
@@ -330,7 +335,7 @@ func matchElement(input *Element, grammar *Element,
 			// If the input is a definition but the grammar is a declaration, no match
 			return fmt.Errorf("Element type mismatch")
 		}
-		cerr := CheckContents(input.Contents, context, diag, prefix+"  ")
+		cerr := CheckContents(input.Contents, context, diag, prefix+"  ", parentRule)
 		if cerr != nil {
 			// If the contents of input don't match the contents of grammar, no match
 			return fmt.Errorf("Content mismatch: %v", cerr)
