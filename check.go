@@ -82,19 +82,14 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 				counts[rule.Name].count++
 
 				// Then check to see if this input has matched any previous rules
+				// If not, then choose this match.  This implies that the first
+				// rule to match is the one that is chosen
 				if in.rule == "" {
 					// If not, indicate what rule this input matched
 					if diag {
 						log.Printf("%sInput %s matched %s", prefix, in.String(), rule.Name)
 					}
 					in.rule = path
-				} else {
-					if diag {
-						log.Printf("%sInput %s already matched %s", prefix, in.String(), in.rule)
-					}
-					// TODO: Just match first one and move on?
-					return fmt.Errorf("Element %s matched rule %s and %s",
-						in.String(), in.rule, rule.Name)
 				}
 			} else {
 				if diag {
