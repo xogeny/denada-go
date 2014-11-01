@@ -100,14 +100,14 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 						rule.Name, ematch.Error())
 				}
 				if len(grammar) == 1 {
-					return fmt.Errorf(
-						"Input '%v' should have matched '%v' but didn't because %v",
-						in, g, ematch)
+					return ematch
+				}
+				if len(in.Qualifiers) == 1 && len(g.Qualifiers) == 1 &&
+					in.Qualifiers[0] == g.Qualifiers[0] {
+					likely = ematch
 				}
 				if in.Name == g.Name {
-					likely = fmt.Errorf(
-						"Likely problem '%v' should have match '%v' but didn't because %v",
-						in, g, ematch)
+					likely = ematch
 				}
 			}
 		}
@@ -127,10 +127,7 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 	for _, in := range input {
 		if in.rule == "" {
 			// If not, add an error
-			msg := fmt.Sprintf("Element %s didn't match any rule: ", in.String())
-			for _, g := range grammar {
-				msg = fmt.Sprintf("%s\n  Didn't match %s", msg, g.Description)
-			}
+			msg := fmt.Sprintf("Element %s didn't match any rule", in.String())
 			ret = append(ret, fmt.Errorf(msg))
 		}
 	}
@@ -307,12 +304,15 @@ func matchExpr(input *simplejson.Json, grammar *simplejson.Json, diag bool) bool
 	if err == nil {
 		schema, err := gojsonschema.NewJsonSchemaDocument(mtype)
 		if err != nil {
-			if diag {
-				log.Printf("Invalid schema in grammar: %v", mtype)
-			}
+			log.Printf("Invalid schema (%v) in grammar: %v", mtype, err)
+
 			return false
 		}
 		result := schema.Validate(input)
+
+		for _, e := range result.Errors() {
+			log.Printf("  JSON Schema validation failed because: %s", e)
+		}
 		return result.Valid()
 	}
 	return false
@@ -338,7 +338,7 @@ func matchElement(input *Element, grammar *Element,
 		cerr := CheckContents(input.Contents, context, diag, prefix+"  ", parentRule)
 		if cerr != nil {
 			// If the contents of input don't match the contents of grammar, no match
-			return fmt.Errorf("Content mismatch: %v", cerr)
+			return cerr
 		}
 	} else {
 		if grammar.isDefinition() {
