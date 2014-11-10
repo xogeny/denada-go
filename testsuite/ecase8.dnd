@@ -1,0 +1,14 @@
+// Use named rules (should fail)
+// 
+
+props(grammar="reference.grm", definitions=1, declarations=1) "props";
+
+z = "This should work";
+
+// This should not be allowed for cardinality reasons
+namedRules {
+  x = "hello"; 
+}
+
+case2 {
+}

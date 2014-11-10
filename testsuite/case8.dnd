@@ -1,0 +1,26 @@
+// Use named rules
+// 
+
+props(grammar="reference.grm", definitions=2, declarations=2) "props";
+
+z = "This should work" "z";
+
+case1 "case1" {
+  props(grammar="reference.grm", definitions=2, declarations=2) "case1.props"; // Ignored
+  z = "Allowed because case1 is recursive" "case1.z";
+  case1 "case1.case1" { // Allowed because of recursion but can be empty
+    props(grammar="reference.grm", definitions=2, declarations=2) "case1.case1.props"; // Ignored
+  }
+}
+
+// This is required
+case2 "case2" {
+  nested "case2.nested" {
+    x = "Allowed" "case2.nested.x"; // This is allowed here by named reference
+  }
+  also "case2.also" { // Simple recursion
+    nested "case2.also.nested" {
+      y = "Also allowed" "case2.also.nested.y";
+    }
+  }
+}

@@ -168,6 +168,47 @@ could even do this:
 With just this simple grammar, we've created a parser for a DSL that
 can parse our sample asset list above and flag errors.
 
+### Named Rules and Recursion
+
+To created recursively nested grammars, it is necessary to somehow
+"break" the potentially infinite structure.  Since Denada grammars are
+(at least up until now) isomorphic with the input structures, handling
+recursion is a challenge.  In fact, any time there are repeated
+patterns you'll have an issue with repeating yourself (potentially an
+infinite number of times).
+
+For this reason, the "description" field of a **definition** rule can
+also include a specification of what **rules** should be matched for
+the children.  The plural in "rules" is important.  The specification
+for child rules appears in the description after a `>`.  What follows
+the `>` can be one of the following:
+
+    * `$root` - Use the rules that appear at the root of the document.
+	
+	* `$children` - Use the children of the current definition.  This
+      is the default so you never have to specify it explicitly (although it
+	  will work).
+
+    * `<rulename>` - Where `<rulename>` is the name of a **fully
+      qualified** definition rule.  The set of possible rule matches
+	  for the children will correspond to the children of all rules
+	  that match the specified rulename.  Since multiple rules can
+	  have the same name, the search for a match is done across
+	  **all** children from all rules.
+
+A simple and convenient shorthand here is to prefix the rule
+description with a `^`.  This indicates that the children of the
+associated definition should match the siblings of that definition
+(*i.e.,* this is a simple way to describe a simple recursive
+relationship where the same entities can appear at every level from
+this point down).
+
+Note that the Denada cardinality syntax allows you to specify a `-`
+for the cardinality.  This means exactly zero occurences of that
+entity.  This is useful for creating collections of rules that are
+never matched by themselves, but can be referred to in multiple
+locations within the grammar for specifying the rules for children.
+
 ## Denada Syntax
 
 Here is EBNF for the Denada language:

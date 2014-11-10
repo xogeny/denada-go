@@ -2,7 +2,6 @@ package denada
 
 import "fmt"
 import "strings"
-import "log"
 
 type Cardinality int
 
@@ -19,7 +18,6 @@ type RuleContext map[string]ElementList
 var emptyContext = RuleContext{"$children": ElementList{}, "$parent": ElementList{}}
 
 type RuleInfo struct {
-	//Recursive   bool
 	ContentsRule string
 	Contents     ElementList
 	Name         string
@@ -70,21 +68,29 @@ func ParseRule(desc string, context RuleContext) (rule RuleInfo, err error) {
 		return
 	}
 
+	// Shorthand notation
 	if str[0] == '^' {
-		log.Printf("Found old style recursive rule in '%s', patching", desc)
 		rule.ContentsRule = "$parent"
+		str = str[1:]
 	}
 
-	ctxt, exists := context[rule.ContentsRule]
-	if !exists {
-		err = fmt.Errorf("Child rule, '%s', no among available contexts: %v",
-			parts[1], context)
+	if context != nil {
+		ctxt, exists := context[rule.ContentsRule]
+		if !exists {
+			err = fmt.Errorf("Child rule, '%s', not among available contexts: %v",
+				parts[1], context)
+		}
+		rule.Contents = ctxt
+	} else {
+		rule.Contents = ElementList{}
 	}
-	rule.Contents = ctxt
 
 	l := len(str) - 1
 	lastchar := str[l]
-	if lastchar == '+' {
+	if lastchar == '-' {
+		rule.Cardinality = Zero
+		str = str[0:l]
+	} else if lastchar == '+' {
 		rule.Cardinality = OneOrMore
 		str = str[0:l]
 	} else if lastchar == '*' {

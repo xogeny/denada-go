@@ -9,7 +9,34 @@ import "github.com/xeipuuv/gojsonschema"
 
 func Check(input ElementList, grammar ElementList, diag bool) error {
 	context := RuleContext{"$root": grammar}
+	for _, g := range grammar {
+		rule, err := ParseRule(g.Description, nil)
+		if err != nil {
+			return err
+		}
+		err = populateContext(rule.Name, *g, context)
+		if err != nil {
+			return err
+		}
+	}
 	return CheckContents(input, grammar, diag, "", "", context)
+}
+
+func populateContext(name string, e Element, context RuleContext) error {
+	if e.isDefinition() {
+		context[name] = e.Contents
+		for _, g := range e.Contents {
+			rule, err := ParseRule(g.Description, nil)
+			if err != nil {
+				return err
+			}
+			err = populateContext(rule.Name, *g, context)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 type matchInfo struct {
@@ -55,6 +82,26 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 		} else {
 			counts[rule.Name] = &matchInfo{count: 0, rule: rule, desc: g.Description}
 		}
+
+		/*
+			// Also initialize the named contexts if this is a definition
+			if g.isDefinition() {
+				// First, construct the fully qualified name for this definition's rule
+				path := parentRule + "." + rule.Name
+				if parentRule == "" {
+					path = rule.Name
+				}
+				// Check to see if another rule has this same name (possible because of
+				// the idiomatic use of multiple rules with the same name indicating an
+				// or relationship)
+				ctxt, exists := context[path]
+				if exists {
+					context[path] = append(ctxt, grammar...)
+				} else {
+					context[path] = grammar
+				}
+			}
+		*/
 	}
 
 	// Now, loop over all the actual input elements and see if they match

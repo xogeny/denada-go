@@ -19,6 +19,19 @@ type Element struct {
 	definition bool
 }
 
+// This checks whether a given element has EXACTLY the listed qualifiers (in the exact order)
+func (e Element) HasQualifiers(quals ...string) bool {
+	if len(quals) != len(e.Qualifiers) {
+		return false
+	}
+	for i, q := range e.Qualifiers {
+		if quals[i] != q {
+			return false
+		}
+	}
+	return true
+}
+
 func (e Element) Clone() *Element {
 	// TODO: Clone modifications and qualifiers
 
