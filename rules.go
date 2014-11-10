@@ -15,7 +15,7 @@ const (
 
 type RuleContext map[string]ElementList
 
-var emptyContext = RuleContext{"$children": ElementList{}, "$parent": ElementList{}}
+var emptyContext = RuleContext{"$this": ElementList{}, "$parent": ElementList{}}
 
 type RuleInfo struct {
 	ContentsRule string
@@ -55,7 +55,7 @@ func ParseRule(desc string, context RuleContext) (rule RuleInfo, err error) {
 
 	parts := strings.Split(desc, ">")
 	str := desc
-	rule.ContentsRule = "$children"
+	rule.ContentsRule = "$this"
 
 	if len(parts) == 0 {
 		err = fmt.Errorf("Empty rule string")

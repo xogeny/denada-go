@@ -62,7 +62,7 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 			return fmt.Errorf("Grammar element %s has no description", g.String())
 		}
 
-		context["$children"] = g.Contents
+		context["$this"] = g.Contents
 
 		// Parse the rule information from the description
 		rule, err := ParseRule(g.Description, context)
@@ -110,7 +110,7 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 		var likely error = nil
 		ierrs := []error{}
 		for _, g := range grammar {
-			context["$children"] = g.Contents
+			context["$this"] = g.Contents
 
 			// Parse the rule information from the description (ignore error
 			// because we already checked that)

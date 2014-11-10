@@ -185,7 +185,7 @@ the `>` can be one of the following:
 
     * `$root` - Use the rules that appear at the root of the document.
 	
-	* `$children` - Use the children of the current definition.  This
+	* `$this` - Use the children of the current definition.  This
       is the default so you never have to specify it explicitly (although it
 	  will work).
 
