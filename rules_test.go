@@ -6,9 +6,9 @@ import . "github.com/onsi/gomega"
 func TestSingularRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	info, err := ParseRule("singleton")
+	info, err := ParseRule("singleton", emptyContext)
 	Expect(err).To(BeNil())
-	Expect(info.Recursive).To(BeFalse())
+	Expect(info.Contents).To(Equal(ElementList{}))
 	Expect(info.Name).To(Equal("singleton"))
 	Expect(info.Cardinality).To(Equal(Cardinality(Singleton)))
 }
@@ -16,9 +16,9 @@ func TestSingularRule(t *testing.T) {
 func TestOptionalRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	info, err := ParseRule("optional?")
+	info, err := ParseRule("optional?", emptyContext)
 	Expect(err).To(BeNil())
-	Expect(info.Recursive).To(BeFalse())
+	Expect(info.Contents).To(Equal(ElementList{}))
 	Expect(info.Name).To(Equal("optional"))
 	Expect(info.Cardinality).To(Equal(Cardinality(Optional)))
 }
@@ -26,9 +26,9 @@ func TestOptionalRule(t *testing.T) {
 func TestZoMRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	info, err := ParseRule("zom*")
+	info, err := ParseRule("zom*", emptyContext)
 	Expect(err).To(BeNil())
-	Expect(info.Recursive).To(BeFalse())
+	Expect(info.Contents).To(Equal(ElementList{}))
 	Expect(info.Name).To(Equal("zom"))
 	Expect(info.Cardinality).To(Equal(Cardinality(ZeroOrMore)))
 }
@@ -36,9 +36,9 @@ func TestZoMRule(t *testing.T) {
 func TestOoMRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	info, err := ParseRule("oom+")
+	info, err := ParseRule("oom+", emptyContext)
 	Expect(err).To(BeNil())
-	Expect(info.Recursive).To(BeFalse())
+	Expect(info.Contents).To(Equal(ElementList{}))
 	Expect(info.Name).To(Equal("oom"))
 	Expect(info.Cardinality).To(Equal(Cardinality(OneOrMore)))
 }
@@ -46,9 +46,12 @@ func TestOoMRule(t *testing.T) {
 func TestRecursiveRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	info, err := ParseRule("^recur")
+	root := ElementList{new(Element)}
+	context := map[string]ElementList{"$root": root}
+
+	info, err := ParseRule("recur>$root", context)
 	Expect(err).To(BeNil())
-	Expect(info.Recursive).To(BeTrue())
+	Expect(info.Contents).To(Equal(root))
 	Expect(info.Name).To(Equal("recur"))
 	Expect(info.Cardinality).To(Equal(Cardinality(Singleton)))
 }
@@ -56,9 +59,12 @@ func TestRecursiveRule(t *testing.T) {
 func TestRecursiveComplexRule(t *testing.T) {
 	RegisterTestingT(t)
 
-	info, err := ParseRule("^recur?")
+	root := ElementList{new(Element)}
+	context := map[string]ElementList{"$root": root}
+
+	info, err := ParseRule("recur?>$root", context)
 	Expect(err).To(BeNil())
-	Expect(info.Recursive).To(BeTrue())
+	Expect(info.Contents).To(Equal(root))
 	Expect(info.Name).To(Equal("recur"))
 	Expect(info.Cardinality).To(Equal(Cardinality(Optional)))
 }

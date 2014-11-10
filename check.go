@@ -8,7 +8,8 @@ import "github.com/bitly/go-simplejson"
 import "github.com/xeipuuv/gojsonschema"
 
 func Check(input ElementList, grammar ElementList, diag bool) error {
-	return CheckContents(input, grammar, diag, "", "")
+	context := RuleContext{"$root": grammar}
+	return CheckContents(input, grammar, diag, "", "", context)
 }
 
 type matchInfo struct {
@@ -18,7 +19,11 @@ type matchInfo struct {
 }
 
 func CheckContents(input ElementList, grammar ElementList, diag bool,
-	prefix string, parentRule string) error {
+	prefix string, parentRule string, context RuleContext) error {
+
+	if len(grammar) == 0 {
+		return fmt.Errorf("Failure: No rules to match these elements %v", input)
+	}
 
 	// Initialize data associated with rule matching
 	counts := map[string]*matchInfo{}
@@ -30,8 +35,10 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 			return fmt.Errorf("Grammar element %s has no description", g.String())
 		}
 
+		context["$children"] = g.Contents
+
 		// Parse the rule information from the description
-		rule, err := ParseRule(g.Description)
+		rule, err := ParseRule(g.Description, context)
 
 		// If there is an error in the rule description, add an error and
 		// skip this grammar element
@@ -41,8 +48,7 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 
 		mi, exists := counts[rule.Name]
 		if exists {
-			if rule.Name != mi.rule.Name || rule.Recursive != mi.rule.Recursive ||
-				rule.Cardinality != mi.rule.Cardinality {
+			if rule.Name != mi.rule.Name || rule.Cardinality != mi.rule.Cardinality {
 				return fmt.Errorf("Unmatching rules with same name: %s vs %s",
 					g.Description, mi.desc)
 			}
@@ -57,25 +63,18 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 		var likely error = nil
 		ierrs := []error{}
 		for _, g := range grammar {
+			context["$children"] = g.Contents
+
 			// Parse the rule information from the description (ignore error
 			// because we already checked that)
-			rule, _ := ParseRule(g.Description)
+			rule, _ := ParseRule(g.Description, context)
 
-			// Normally, if we find a match in matchElement, we'll use that
-			// matching rules contents as the rules to apply to the matching
-			// inputs children...
-			context := g.Contents
-
-			if rule.Recursive {
-				// ...but if the rule is recursive, we choose the same rules
-				// as we are currently using at this level
-				context = grammar
-			}
 			path := parentRule + "." + rule.Name
 			if parentRule == "" {
 				path = rule.Name
 			}
-			ematch := matchElement(in, g, context, diag, prefix, path)
+			context["$parent"] = grammar
+			ematch := matchElement(in, g, rule.Contents, diag, prefix, path, context)
 			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
@@ -111,7 +110,12 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 		}
 		if in.rule == "" {
 			if likely == nil {
-				return fmt.Errorf("No match for element %v because %v", in, listToError(ierrs))
+				if len(ierrs) == 0 {
+					return fmt.Errorf("No match for element %v (empty rules?!?)", in)
+				} else {
+					return fmt.Errorf("No match for element %v because %v",
+						in, listToError(ierrs))
+				}
 			} else {
 				return likely
 			}
@@ -150,7 +154,7 @@ func matchQualifiers(input *Element, grammar *Element) bool {
 	for _, g := range grammar.Qualifiers {
 		count := 0
 
-		rule, err := ParseRule(g)
+		rule, err := ParseRule(g, emptyContext)
 
 		if err != nil {
 			log.Printf("Error parsing rule information in qualifier '%s': %v", g, err)
@@ -197,7 +201,7 @@ func matchModifications(input *Element, grammar *Element, diag bool) bool {
 		count := 0
 
 		// Parse the rule
-		rule, err := ParseRule(r)
+		rule, err := ParseRule(r, emptyContext)
 
 		if err != nil {
 			// If the rule is not valid, assume no match
@@ -308,8 +312,8 @@ func matchExpr(input *simplejson.Json, grammar *simplejson.Json, diag bool) bool
 	return false
 }
 
-func matchElement(input *Element, grammar *Element,
-	context ElementList, diag bool, prefix string, parentRule string) error {
+func matchElement(input *Element, grammar *Element, children ElementList,
+	diag bool, prefix string, parentRule string, context RuleContext) error {
 	// Check if the names match
 	matched := matchString(input.Name, grammar.Name)
 
@@ -325,7 +329,7 @@ func matchElement(input *Element, grammar *Element,
 			// If the input is a definition but the grammar is a declaration, no match
 			return fmt.Errorf("Element type mismatch between %v and %v", input, grammar)
 		}
-		cerr := CheckContents(input.Contents, context, diag, prefix+"  ", parentRule)
+		cerr := CheckContents(input.Contents, children, diag, prefix+"  ", parentRule, context)
 		if cerr != nil {
 			// If the contents of input don't match the contents of grammar, no match
 			return cerr
@@ -340,6 +344,7 @@ func matchElement(input *Element, grammar *Element,
 		}
 	}
 
+	// TODO: Move these up, since they are quicker to establish
 	if !matchQualifiers(input, grammar) {
 		return fmt.Errorf("Qualifier mismatch (%v vs %v)", input.Qualifiers,
 			grammar.Qualifiers)
