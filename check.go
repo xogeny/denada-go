@@ -48,7 +48,7 @@ type matchInfo struct {
 func CheckContents(input ElementList, grammar ElementList, diag bool,
 	prefix string, parentRule string, context RuleContext) error {
 
-	if len(grammar) == 0 {
+	if len(grammar) == 0 && len(input) != 0 {
 		return fmt.Errorf("Failure: No rules to match these elements %v", input)
 	}
 
@@ -135,7 +135,8 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 					if diag {
 						log.Printf("%sInput %s matched %s", prefix, in.String(), rule.Name)
 					}
-					in.rule = path
+					in.rulepath = path
+					in.rule = rule.Name
 				}
 			} else {
 				if diag {

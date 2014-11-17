@@ -15,6 +15,7 @@ type Element struct {
 	Contents      ElementList      // Used by definitions
 	Value         *simplejson.Json // Used by declarations
 
+	rulepath   string
 	rule       string
 	definition bool
 }
@@ -30,6 +31,10 @@ func (e Element) HasQualifiers(quals ...string) bool {
 		}
 	}
 	return true
+}
+
+func (e Element) Unparse() string {
+	return UnparseElement(e)
 }
 
 func (e Element) Clone() *Element {
@@ -74,6 +79,10 @@ func (e Element) String() string {
 
 func (e Element) Rule() string {
 	return e.rule
+}
+
+func (e Element) RulePath() string {
+	return e.rulepath
 }
 
 func (e Element) isDefinition() bool {
@@ -216,6 +225,22 @@ func (e ElementList) Named(name string) ElementList {
 	for _, elem := range e {
 		if elem.Name == name {
 			ret = append(ret, elem)
+		}
+	}
+	return ret
+}
+
+func (e ElementList) OfRule(name string, fqn bool) ElementList {
+	ret := ElementList{}
+	for _, elem := range e {
+		if fqn {
+			if elem.rulepath == name {
+				ret = append(ret, elem)
+			}
+		} else {
+			if elem.rule == name {
+				ret = append(ret, elem)
+			}
 		}
 	}
 	return ret

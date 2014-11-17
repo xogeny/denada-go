@@ -34,6 +34,12 @@ func unparseValue(v *simplejson.Json, prefix string) string {
 	return estr
 }
 
+func UnparseElement(e Element) string {
+	w := bytes.NewBuffer([]byte{})
+	unparseElement(e, "", w)
+	return w.String()
+}
+
 func unparseElement(e Element, prefix string, w io.Writer) {
 	fmt.Fprintf(w, prefix)
 	for _, q := range e.Qualifiers {

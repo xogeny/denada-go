@@ -91,13 +91,13 @@ func CheckFile(name string) error {
 					err = fmt.Errorf("Input element %v in %s didn't have a description",
 						e, name)
 					return err
-				} else if e.Rule() == "" {
+				} else if e.RulePath() == "" {
 					err = fmt.Errorf("Input element %v in %s didn't seem to match anything",
 						e, name)
 					return err
 				} else {
-					if e.Rule() != e.Description {
-						err = fmt.Errorf("Input element %v matched rule %s but description implies a match with %s", e, e.Rule(), e.Description)
+					if e.RulePath() != e.Description {
+						err = fmt.Errorf("Input element %v matched rule %s but description implies a match with %s", e, e.RulePath(), e.Description)
 						return err
 					}
 				}
