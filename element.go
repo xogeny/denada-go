@@ -220,10 +220,29 @@ func (e ElementList) Declarations() ElementList {
 	return ret
 }
 
+func (e ElementList) FirstNamed(name string) *Element {
+	for _, elem := range e {
+		if elem.Name == name {
+			return elem
+		}
+	}
+	return nil
+}
+
 func (e ElementList) Named(name string) ElementList {
 	ret := ElementList{}
 	for _, elem := range e {
 		if elem.Name == name {
+			ret = append(ret, elem)
+		}
+	}
+	return ret
+}
+
+func (e ElementList) QualifiedWith(name ...string) ElementList {
+	ret := ElementList{}
+	for _, elem := range e {
+		if elem.HasQualifiers(name...) {
 			ret = append(ret, elem)
 		}
 	}
