@@ -185,6 +185,28 @@ func (e Element) Equals(o Element) error {
 	return nil
 }
 
+func (e *Element) StringValueOf(defval string) string {
+	if e == nil {
+		return defval
+	}
+	if e.Value == nil {
+		return defval
+	}
+	s, err := e.Value.String()
+	if err != nil {
+		return defval
+	}
+	return s
+}
+
+func (e *Element) FirstNamed(name string) *Element {
+	if e.definition {
+		return e.Contents.FirstNamed(name)
+	} else {
+		return nil
+	}
+}
+
 type ElementList []*Element
 
 func (e ElementList) Definition(name string, children ...string) (*Element, error) {
@@ -227,16 +249,6 @@ func (e ElementList) FirstNamed(name string) *Element {
 		}
 	}
 	return nil
-}
-
-func (e ElementList) Named(name string) ElementList {
-	ret := ElementList{}
-	for _, elem := range e {
-		if elem.Name == name {
-			ret = append(ret, elem)
-		}
-	}
-	return ret
 }
 
 func (e ElementList) QualifiedWith(name ...string) ElementList {
