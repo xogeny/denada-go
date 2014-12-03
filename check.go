@@ -385,10 +385,19 @@ func matchElement(input *Element, grammar *Element, children ElementList,
 	} else {
 		if grammar.isDefinition() {
 			// If the input is a declaration but the grammar is a definition, no match
-			return fmt.Errorf("Element type mismatch")
+			return fmt.Errorf("Element type mismatch between %v and %v", input, grammar)
 		}
 		if !matchExpr(input.Value, grammar.Value, diag) {
-			return fmt.Errorf("Value pattern mismatch")
+			if input.Value == nil && grammar.Value != nil {
+				return fmt.Errorf("Value pattern mismatch: <no value> vs %s",
+					unparseValue(grammar.Value, ""))
+			} else if input.Value != nil && grammar.Value == nil {
+				return fmt.Errorf("Value pattern mismatch: %s vs <no value>",
+					unparseValue(input.Value, ""))
+			} else {
+				return fmt.Errorf("Value pattern mismatch: %s vs %s",
+					unparseValue(input.Value, ""), unparseValue(grammar.Value, ""))
+			}
 		}
 	}
 
