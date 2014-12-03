@@ -20,6 +20,31 @@ type Element struct {
 	definition bool
 }
 
+func NewDefinition(name string, desc string, qualifiers ...string) *Element {
+	return &Element{
+		Qualifiers:    qualifiers,
+		Name:          name,
+		Description:   desc,
+		Modifications: Modifications{},
+		Contents:      ElementList{},
+		Value:         nil,
+		definition:    true,
+	}
+}
+
+func NewDeclaration(name string, desc string,
+	qualifiers ...string) *Element {
+	return &Element{
+		Qualifiers:    qualifiers,
+		Name:          name,
+		Description:   desc,
+		Modifications: Modifications{},
+		Contents:      ElementList{},
+		Value:         nil,
+		definition:    false,
+	}
+}
+
 // This checks whether a given element has EXACTLY the listed qualifiers (in the exact order)
 func (e Element) HasQualifiers(quals ...string) bool {
 	if len(quals) != len(e.Qualifiers) {
@@ -183,6 +208,12 @@ func (e Element) Equals(o Element) error {
 	}
 	// If we get here, nothing was unequal
 	return nil
+}
+
+func (e *Element) SetValue(data interface{}) *simplejson.Json {
+	val := makeJson(data)
+	e.Value = val
+	return val
 }
 
 func (e *Element) StringValueOf(defval string) string {
