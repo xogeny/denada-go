@@ -1,5 +1,6 @@
 package denada
 
+import "log"
 import "fmt"
 
 type RuleContext struct {
@@ -28,6 +29,23 @@ func ChildContext(elems ElementList, parent *RuleContext) RuleContext {
 	}
 }
 
+func (c RuleContext) String() string {
+	names := []string{}
+	for _, e := range c.This {
+		rule, err := ParseRuleName(e.Description)
+		if err != nil {
+			names = append(names, "<non-rule>")
+		} else {
+			names = append(names, rule.Name)
+		}
+	}
+	if c.parent == nil {
+		return fmt.Sprintf("[%s]", names)
+	} else {
+		return fmt.Sprintf("[%s (%v)]", names, c.parent)
+	}
+}
+
 func (c RuleContext) Find(path ...string) (ret RuleContext, err error) {
 	/* If no path is provided, they must me this context */
 	if len(path) == 0 {
@@ -51,6 +69,7 @@ func (c RuleContext) Find(path ...string) (ret RuleContext, err error) {
 			return
 		} else {
 			/* Otherwise, resume the search in our parent context */
+			log.Printf("Looking up path %v in parent", path)
 			return c.parent.Find(path[1:]...)
 		}
 	}

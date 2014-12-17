@@ -14,10 +14,10 @@ const (
 )
 
 type RuleInfo struct {
-	ContentsRule []string
-	Contents     ElementList
-	Name         string
-	Cardinality  Cardinality
+	ContextPath []string
+	Context     RuleContext
+	Name        string
+	Cardinality Cardinality
 }
 
 func (r RuleInfo) checkCount(count int) error {
@@ -79,8 +79,8 @@ func ParseRule(desc string, context RuleContext) (rule RuleInfo, err error) {
 		err = fmt.Errorf("Error finding %v: %v", path, ferr)
 		return
 	}
-	rule.Contents = rctxt.This
-	rule.ContentsRule = path
+	rule.Context = rctxt
+	rule.ContextPath = path
 
 	l := len(str) - 1
 	lastchar := str[l]

@@ -36,10 +36,8 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 			return fmt.Errorf("Grammar element %s has no description", g.String())
 		}
 
-		gctxt := ChildContext(g.Contents, &context)
-
 		// Parse the rule information from the description
-		rule, err := ParseRule(g.Description, gctxt)
+		rule, err := ParseRule(g.Description, ChildContext(g.Contents, &context))
 
 		// If there is an error in the rule description, add an error and
 		// skip this grammar element
@@ -87,17 +85,15 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 			// Parse the rule information from the description (ignore error
 			// because we already checked that)
 
-			gctxt := ChildContext(g.Contents, &context)
-
-			rule, _ := ParseRule(g.Description, gctxt)
+			rule, _ := ParseRule(g.Description, ChildContext(g.Contents, &context))
 
 			path := parentRule + "." + rule.Name
 			if parentRule == "" {
 				path = rule.Name
 			}
 
-			ematch := matchElement(in, g, rule.Contents, diag, prefix,
-				path, gctxt)
+			ematch := matchElement(in, g, rule.Context.This, diag, prefix,
+				path, rule.Context)
 			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
