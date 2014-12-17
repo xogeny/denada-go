@@ -1,6 +1,5 @@
 package denada
 
-import "log"
 import "fmt"
 
 type RuleContext struct {
@@ -69,7 +68,6 @@ func (c RuleContext) Find(path ...string) (ret RuleContext, err error) {
 			return
 		} else {
 			/* Otherwise, resume the search in our parent context */
-			log.Printf("Looking up path %v in parent", path)
 			return c.parent.Find(path[1:]...)
 		}
 	}
