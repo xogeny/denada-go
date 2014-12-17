@@ -4,6 +4,8 @@ import "testing"
 import . "github.com/onsi/gomega"
 
 func Test_QualifierMatch(t *testing.T) {
+	RegisterTestingT(t)
+
 	g := Element{Qualifiers: []string{"set"}, Name: "_", Description: "foo*", definition: false}
 	i := Element{Qualifiers: []string{"var"}, Name: "x", definition: false}
 
