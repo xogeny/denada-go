@@ -210,6 +210,10 @@ func (e Element) Equals(o Element) error {
 	return nil
 }
 
+func (e *Element) SetModification(key string, data interface{}) {
+	e.Modifications[key] = makeJson(data)
+}
+
 func (e *Element) SetValue(data interface{}) *simplejson.Json {
 	val := makeJson(data)
 	e.Value = val

@@ -40,6 +40,10 @@ func UnparseElement(e Element) string {
 	return w.String()
 }
 
+func UnparseElementTo(e Element, w io.Writer) {
+	unparseElement(e, "", w)
+}
+
 func unparseElement(e Element, prefix string, w io.Writer) {
 	fmt.Fprintf(w, prefix)
 	for _, q := range e.Qualifiers {

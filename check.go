@@ -8,7 +8,7 @@ import "github.com/bitly/go-simplejson"
 import "github.com/xeipuuv/gojsonschema"
 
 func Check(input ElementList, grammar ElementList, diag bool) error {
-	context := RuleContext{"$root": grammar}
+	context := RuleContext{"$root": grammar, "$parent": grammar}
 	for _, g := range grammar {
 		rule, err := ParseRule(g.Description, nil)
 		if err != nil {
