@@ -91,7 +91,7 @@ func (e Element) String() string {
 	}
 	ret += e.Name
 
-	if e.isDefinition() {
+	if e.IsDefinition() {
 		return fmt.Sprintf("%s { ... }", ret)
 	} else {
 		if e.Value != nil {
@@ -110,11 +110,11 @@ func (e Element) RulePath() string {
 	return e.rulepath
 }
 
-func (e Element) isDefinition() bool {
+func (e Element) IsDefinition() bool {
 	return e.definition
 }
 
-func (e Element) isDeclaration() bool {
+func (e Element) IsDeclaration() bool {
 	return !e.definition
 }
 
@@ -131,7 +131,7 @@ func equalValues(l *simplejson.Json, r *simplejson.Json) (bool, error) {
 }
 
 func (e *Element) Append(children ...*Element) error {
-	if e.isDefinition() {
+	if e.IsDefinition() {
 		e.Contents = append(e.Contents, children...)
 		return nil
 	} else {
@@ -246,7 +246,7 @@ type ElementList []*Element
 
 func (e ElementList) Definition(name string, children ...string) (*Element, error) {
 	for _, d := range e {
-		if d.isDefinition() && d.Name == name {
+		if d.IsDefinition() && d.Name == name {
 			if len(children) == 0 {
 				return d, nil
 			} else {
@@ -260,7 +260,7 @@ func (e ElementList) Definition(name string, children ...string) (*Element, erro
 func (e ElementList) Definitions() ElementList {
 	ret := ElementList{}
 	for _, elem := range e {
-		if elem.isDefinition() {
+		if elem.IsDefinition() {
 			ret = append(ret, elem)
 		}
 	}
@@ -270,7 +270,7 @@ func (e ElementList) Definitions() ElementList {
 func (e ElementList) Declarations() ElementList {
 	ret := ElementList{}
 	for _, elem := range e {
-		if elem.isDeclaration() {
+		if elem.IsDeclaration() {
 			ret = append(ret, elem)
 		}
 	}
@@ -316,7 +316,7 @@ func (e ElementList) AllElements() ElementList {
 	ret := ElementList{}
 	for _, elem := range e {
 		ret = append(ret, elem)
-		if elem.isDefinition() {
+		if elem.IsDefinition() {
 			ret = append(ret, elem.Contents.AllElements()...)
 		}
 	}

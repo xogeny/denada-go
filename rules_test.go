@@ -1,70 +1,104 @@
 package denada
 
+import "log"
 import "testing"
-import . "github.com/onsi/gomega"
+import . "github.com/smartystreets/goconvey/convey"
 
 func TestSingularRule(t *testing.T) {
-	RegisterTestingT(t)
-
-	info, err := ParseRule("singleton", emptyContext)
-	Expect(err).To(BeNil())
-	Expect(info.Contents).To(Equal(ElementList{}))
-	Expect(info.Name).To(Equal("singleton"))
-	Expect(info.Cardinality).To(Equal(Cardinality(Singleton)))
+	Convey("Testing Singular Rule", t, func() {
+		info, err := ParseRuleName("singleton")
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, ElementList{})
+		So(info.Name, ShouldEqual, "singleton")
+		So(info.Cardinality, ShouldEqual, Cardinality(Singleton))
+	})
 }
 
 func TestOptionalRule(t *testing.T) {
-	RegisterTestingT(t)
-
-	info, err := ParseRule("optional?", emptyContext)
-	Expect(err).To(BeNil())
-	Expect(info.Contents).To(Equal(ElementList{}))
-	Expect(info.Name).To(Equal("optional"))
-	Expect(info.Cardinality).To(Equal(Cardinality(Optional)))
+	Convey("Testing Optional Rule", t, func() {
+		info, err := ParseRuleName("optional?")
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, ElementList{})
+		So(info.Name, ShouldEqual, "optional")
+		So(info.Cardinality, ShouldEqual, Cardinality(Optional))
+	})
 }
 
 func TestZoMRule(t *testing.T) {
-	RegisterTestingT(t)
-
-	info, err := ParseRule("zom*", emptyContext)
-	Expect(err).To(BeNil())
-	Expect(info.Contents).To(Equal(ElementList{}))
-	Expect(info.Name).To(Equal("zom"))
-	Expect(info.Cardinality).To(Equal(Cardinality(ZeroOrMore)))
+	Convey("Testing Zero-Or-More Rule", t, func() {
+		info, err := ParseRuleName("zom*")
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, ElementList{})
+		So(info.Name, ShouldEqual, "zom")
+		So(info.Cardinality, ShouldEqual, Cardinality(ZeroOrMore))
+	})
 }
 
 func TestOoMRule(t *testing.T) {
-	RegisterTestingT(t)
-
-	info, err := ParseRule("oom+", emptyContext)
-	Expect(err).To(BeNil())
-	Expect(info.Contents).To(Equal(ElementList{}))
-	Expect(info.Name).To(Equal("oom"))
-	Expect(info.Cardinality).To(Equal(Cardinality(OneOrMore)))
+	Convey("Testing One-Or-More Rule", t, func() {
+		info, err := ParseRuleName("oom+")
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, ElementList{})
+		So(info.Name, ShouldEqual, "oom")
+		So(info.Cardinality, ShouldEqual, Cardinality(OneOrMore))
+	})
 }
 
 func TestRecursiveRule(t *testing.T) {
-	RegisterTestingT(t)
+	Convey("Testing Recursive Rule", t, func() {
+		dummy := NewDeclaration("dummy", "dummy*")
+		root := ElementList{dummy}
+		context := RootContext(root)
 
-	root := ElementList{new(Element)}
-	context := map[string]ElementList{"$root": root}
+		info, err := ParseRule("recur>$root", context)
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, root)
+		So(info.Name, ShouldEqual, "recur")
+		So(info.Cardinality, ShouldEqual, Cardinality(Singleton))
+	})
+}
 
-	info, err := ParseRule("recur>$root", context)
-	Expect(err).To(BeNil())
-	Expect(info.Contents).To(Equal(root))
-	Expect(info.Name).To(Equal("recur"))
-	Expect(info.Cardinality).To(Equal(Cardinality(Singleton)))
+func TestParentRule(t *testing.T) {
+	Convey("Testing Parent Rule", t, func() {
+		dummy := NewDeclaration("dummy", "dummy*")
+		root := ElementList{dummy}
+		context := RootContext(root)
+
+		log.Printf("TestParentRule.context = %v", context)
+		_, err := ParseRule("recur>..", context)
+		So(err, ShouldNotBeNil)
+	})
+}
+
+func TestCurrentRule(t *testing.T) {
+	Convey("Testing Current Rule", t, func() {
+		dummy := NewDeclaration("dummy", "dummy*")
+		root := ElementList{dummy}
+		context := RootContext(root)
+
+		info, err := ParseRule("recur>.", context)
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, root)
+		So(info.Name, ShouldEqual, "recur")
+		So(info.Cardinality, ShouldEqual, Cardinality(Singleton))
+
+		info, err = ParseRule("recur", context)
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, root)
+		So(info.Name, ShouldEqual, "recur")
+		So(info.Cardinality, ShouldEqual, Cardinality(Singleton))
+	})
 }
 
 func TestRecursiveComplexRule(t *testing.T) {
-	RegisterTestingT(t)
+	Convey("Testing Complex Recursive Rule", t, func() {
+		root := ElementList{new(Element)}
+		context := RootContext(root)
 
-	root := ElementList{new(Element)}
-	context := map[string]ElementList{"$root": root}
-
-	info, err := ParseRule("recur?>$root", context)
-	Expect(err).To(BeNil())
-	Expect(info.Contents).To(Equal(root))
-	Expect(info.Name).To(Equal("recur"))
-	Expect(info.Cardinality).To(Equal(Cardinality(Optional)))
+		info, err := ParseRule("recur?>$root", context)
+		So(err, ShouldBeNil)
+		So(info.Contents, ShouldResemble, root)
+		So(info.Name, ShouldEqual, "recur")
+		So(info.Cardinality, ShouldEqual, Cardinality(Optional))
+	})
 }

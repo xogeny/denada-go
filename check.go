@@ -8,35 +8,8 @@ import "github.com/bitly/go-simplejson"
 import "github.com/xeipuuv/gojsonschema"
 
 func Check(input ElementList, grammar ElementList, diag bool) error {
-	context := RuleContext{"$root": grammar, "$parent": grammar}
-	for _, g := range grammar {
-		rule, err := ParseRule(g.Description, nil)
-		if err != nil {
-			return err
-		}
-		err = populateContext(rule.Name, *g, context)
-		if err != nil {
-			return err
-		}
-	}
+	context := RootContext(grammar)
 	return CheckContents(input, grammar, diag, "", "", context)
-}
-
-func populateContext(name string, e Element, context RuleContext) error {
-	if e.isDefinition() {
-		context[name] = e.Contents
-		for _, g := range e.Contents {
-			rule, err := ParseRule(g.Description, nil)
-			if err != nil {
-				return err
-			}
-			err = populateContext(rule.Name, *g, context)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 type matchInfo struct {
@@ -49,7 +22,8 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 	prefix string, parentRule string, context RuleContext) error {
 
 	if len(grammar) == 0 && len(input) != 0 {
-		return fmt.Errorf("Failure: No rules to match these elements %v", input)
+		return fmt.Errorf("Failure: No rules to match these elements %v (in context %v)",
+			input, context)
 	}
 
 	// Initialize data associated with rule matching
@@ -62,10 +36,10 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 			return fmt.Errorf("Grammar element %s has no description", g.String())
 		}
 
-		context["$this"] = g.Contents
+		gctxt := ChildContext(g.Contents, &context)
 
 		// Parse the rule information from the description
-		rule, err := ParseRule(g.Description, context)
+		rule, err := ParseRule(g.Description, gctxt)
 
 		// If there is an error in the rule description, add an error and
 		// skip this grammar element
@@ -110,18 +84,20 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 		var likely error = nil
 		ierrs := []error{}
 		for _, g := range grammar {
-			context["$this"] = g.Contents
-
 			// Parse the rule information from the description (ignore error
 			// because we already checked that)
-			rule, _ := ParseRule(g.Description, context)
+
+			gctxt := ChildContext(g.Contents, &context)
+
+			rule, _ := ParseRule(g.Description, gctxt)
 
 			path := parentRule + "." + rule.Name
 			if parentRule == "" {
 				path = rule.Name
 			}
-			context["$parent"] = grammar
-			ematch := matchElement(in, g, rule.Contents, diag, prefix, path, context)
+
+			ematch := matchElement(in, g, rule.Contents, diag, prefix,
+				path, gctxt)
 			if ematch == nil {
 				// A match was found, so increment the count for this particular
 				// grammar rule
@@ -202,7 +178,7 @@ func matchQualifiers(input *Element, grammar *Element) bool {
 	for _, g := range grammar.Qualifiers {
 		count := 0
 
-		rule, err := ParseRule(g, emptyContext)
+		rule, err := ParseRuleName(g)
 
 		if err != nil {
 			log.Printf("Error parsing rule information in qualifier '%s': %v", g, err)
@@ -249,7 +225,7 @@ func matchModifications(input *Element, grammar *Element, diag bool) bool {
 		count := 0
 
 		// Parse the rule
-		rule, err := ParseRule(r, emptyContext)
+		rule, err := ParseRuleName(r)
 
 		if err != nil {
 			// If the rule is not valid, assume no match
@@ -372,8 +348,8 @@ func matchElement(input *Element, grammar *Element, children ElementList,
 	}
 
 	// Check whether the input is a definition or declaration
-	if input.isDefinition() {
-		if grammar.isDeclaration() {
+	if input.IsDefinition() {
+		if grammar.IsDeclaration() {
 			// If the input is a definition but the grammar is a declaration, no match
 			return fmt.Errorf("Element type mismatch between %v and %v", input, grammar)
 		}
@@ -383,7 +359,7 @@ func matchElement(input *Element, grammar *Element, children ElementList,
 			return cerr
 		}
 	} else {
-		if grammar.isDefinition() {
+		if grammar.IsDefinition() {
 			// If the input is a declaration but the grammar is a definition, no match
 			return fmt.Errorf("Element type mismatch between %v and %v", input, grammar)
 		}

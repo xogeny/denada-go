@@ -10,7 +10,7 @@ z = "$string" "z?";
 case1 "case1?>$root" {}
 
 case2 "case2?" {
-  nested "nested?>namedRules" { // Should be nested?namedRules
+  nested "nested?>$root/namedRules" { // Should be nested?namedRules
   }
   also "^also?" {
   }

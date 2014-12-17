@@ -61,8 +61,8 @@ func Test_SimpleDeclaration(t *testing.T) {
 
 	elem := elems[0]
 
-	Expect(elem.isDeclaration()).To(BeTrue())
-	Expect(elem.isDefinition()).To(BeFalse())
+	Expect(elem.IsDeclaration()).To(BeTrue())
+	Expect(elem.IsDefinition()).To(BeFalse())
 	Expect(len(elem.Modifications)).To(Equal(0))
 
 	Expect(elem.Qualifiers).To(Equal([]string{"set"}))
@@ -91,9 +91,9 @@ func Test_SampleInput(t *testing.T) {
 	Expect(err).To(BeNil())
 
 	Expect(len(el)).To(Equal(3))
-	Expect(el[0].isDefinition()).To(BeTrue())
-	Expect(el[1].isDefinition()).To(BeTrue())
-	Expect(el[2].isDefinition()).To(BeTrue())
+	Expect(el[0].IsDefinition()).To(BeTrue())
+	Expect(el[1].IsDefinition()).To(BeTrue())
+	Expect(el[2].IsDefinition()).To(BeTrue())
 }
 
 func Test_SampleNoExprInput(t *testing.T) {
@@ -105,8 +105,8 @@ func Test_SampleNoExprInput(t *testing.T) {
 	Expect(err).To(BeNil())
 
 	Expect(len(el)).To(Equal(2))
-	Expect(el[0].isDefinition()).To(BeTrue())
-	Expect(el[1].isDefinition()).To(BeTrue())
+	Expect(el[0].IsDefinition()).To(BeTrue())
+	Expect(el[1].IsDefinition()).To(BeTrue())
 }
 
 func Test_JsonTypes(t *testing.T) {
@@ -149,9 +149,9 @@ func Test_SampleJSONInput(t *testing.T) {
 	Expect(len(el)).To(Equal(8))
 	for i, e := range el {
 		if i == 7 {
-			Expect(e.isDefinition()).To(BeTrue())
+			Expect(e.IsDefinition()).To(BeTrue())
 		} else {
-			Expect(e.isDefinition()).To(BeFalse())
+			Expect(e.IsDefinition()).To(BeFalse())
 		}
 	}
 }

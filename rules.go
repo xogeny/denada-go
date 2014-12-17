@@ -13,12 +13,8 @@ const (
 	OneOrMore
 )
 
-type RuleContext map[string]ElementList
-
-var emptyContext = RuleContext{"$this": ElementList{}, "$parent": ElementList{}}
-
 type RuleInfo struct {
-	ContentsRule string
+	ContentsRule []string
 	Contents     ElementList
 	Name         string
 	Cardinality  Cardinality
@@ -46,6 +42,10 @@ func (r RuleInfo) checkCount(count int) error {
 	return nil
 }
 
+func ParseRuleName(desc string) (rule RuleInfo, err error) {
+	return ParseRule(desc, NullContext())
+}
+
 func ParseRule(desc string, context RuleContext) (rule RuleInfo, err error) {
 	rule = RuleInfo{Cardinality: Zero}
 
@@ -55,14 +55,14 @@ func ParseRule(desc string, context RuleContext) (rule RuleInfo, err error) {
 
 	parts := strings.Split(desc, ">")
 	str := desc
-	rule.ContentsRule = "$this"
+	path := []string{"."}
 
 	if len(parts) == 0 {
 		err = fmt.Errorf("Empty rule string")
 		return
 	} else if len(parts) == 2 {
 		str = parts[0]
-		rule.ContentsRule = parts[1]
+		path = strings.Split(parts[1], "/")
 	} else if len(parts) > 2 {
 		err = fmt.Errorf("Rule contains multiple child rule indicators (>)")
 		return
@@ -70,20 +70,17 @@ func ParseRule(desc string, context RuleContext) (rule RuleInfo, err error) {
 
 	// Shorthand notation
 	if str[0] == '^' {
-		rule.ContentsRule = "$parent"
+		path = []string{".."}
 		str = str[1:]
 	}
 
-	if context != nil {
-		ctxt, exists := context[rule.ContentsRule]
-		if !exists {
-			err = fmt.Errorf("Child rule, '%s', not among available contexts: %v",
-				parts[1], context)
-		}
-		rule.Contents = ctxt
-	} else {
-		rule.Contents = ElementList{}
+	rctxt, ferr := context.Find(path...)
+	if ferr != nil {
+		err = fmt.Errorf("Error finding %v: %v", path, ferr)
+		return
 	}
+	rule.Contents = rctxt.This
+	rule.ContentsRule = path
 
 	l := len(str) - 1
 	lastchar := str[l]

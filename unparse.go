@@ -65,7 +65,7 @@ func unparseElement(e Element, prefix string, w io.Writer) {
 		}
 		fmt.Fprintf(w, ")")
 	}
-	if e.isDefinition() {
+	if e.IsDefinition() {
 		fmt.Fprintf(w, " ")
 		if e.Description != "" {
 			fmt.Fprintf(w, "\"%s\" ", strings.Replace(e.Description, "\"", "\\\"", 0))

@@ -15,7 +15,7 @@ func ImportTransform(root ElementList) (ret ElementList, err error) {
 
 	ret = ElementList{}
 	for _, e := range root {
-		match := matchElement(e, g[0], g[0].Contents, false, "", "", emptyContext)
+		match := matchElement(e, g[0], g[0].Contents, false, "", "", NullContext())
 		if match == nil {
 			file := e.Modifications["file"].MustString()
 			insert, err := ParseFile(file)
@@ -38,7 +38,7 @@ func ImportTransform(root ElementList) (ret ElementList, err error) {
 				ret = append(ret, i)
 			}
 		} else {
-			if e.isDefinition() {
+			if e.IsDefinition() {
 				newchildren, err := ImportTransform(e.Contents)
 				if err != nil {
 					return nil, err

@@ -7,7 +7,7 @@ import "path"
 import "testing"
 import "strings"
 
-import . "github.com/onsi/gomega"
+import . "github.com/smartystreets/goconvey/convey"
 
 func ReparseFile(name string) error {
 	filename := path.Join("testsuite", name)
@@ -60,10 +60,10 @@ func CheckFile(name string) error {
 	var adecls int = 0
 	var adefs int = 0
 	for _, e := range elems {
-		if e.isDeclaration() {
+		if e.IsDeclaration() {
 			adecls++
 		}
-		if e.isDefinition() {
+		if e.IsDefinition() {
 			adefs++
 		}
 	}
@@ -111,42 +111,46 @@ func CheckFile(name string) error {
 
 func CheckError(name string) {
 	err := CheckFile(name)
-	Expect(err).ToNot(BeNil())
+	So(err, ShouldBeNil)
 }
 
 func Test_TestSuite(t *testing.T) {
-	RegisterTestingT(t)
+	Convey("Running TestSuite", t, func() {
+		cur, err := os.Open("testsuite")
+		So(err, ShouldBeNil)
 
-	cur, err := os.Open("testsuite")
-	Expect(err).To(BeNil())
+		files, err := cur.Readdir(0)
+		So(err, ShouldBeNil)
 
-	files, err := cur.Readdir(0)
-	Expect(err).To(BeNil())
-
-	for _, f := range files {
-		name := f.Name()
-		if strings.HasSuffix(name, ".dnd") {
-			if strings.HasPrefix(name, "case") {
-				err := CheckFile(name)
-				if err != nil {
-					log.Printf("Case %s: Failed: %v", name, err)
-				}
-				Expect(err).To(BeNil())
-				err = ReparseFile(name)
-				if err != nil {
-					log.Printf("Case %s: Reparse failed: %v", name, err)
-				}
+		for _, f := range files {
+			name := f.Name()
+			if !strings.HasSuffix(name, ".dnd") {
 				continue
 			}
-			if strings.HasPrefix(name, "ecase") {
-				err := CheckFile(name)
-				if err == nil {
-					log.Printf("Error Case %s: FAILED", name)
+			Convey("Processing "+name, func() {
+				if strings.HasPrefix(name, "case") {
+					err := CheckFile(name)
+					if err != nil {
+						log.Printf("Case %s: Failed: %v", name, err)
+					}
+					So(err, ShouldBeNil)
+					err = ReparseFile(name)
+					if err != nil {
+						log.Printf("Case %s: Reparse failed: %v", name, err)
+					}
+					So(err, ShouldBeNil)
+					return
 				}
-				Expect(err).ToNot(BeNil())
-				continue
-			}
-			log.Printf("Unrecognized file type in test suite: %s", name)
+				if strings.HasPrefix(name, "ecase") {
+					err := CheckFile(name)
+					if err == nil {
+						log.Printf("Error Case %s: FAILED", name)
+					}
+					So(err, ShouldNotBeNil)
+					return
+				}
+				log.Printf("Unrecognized file type in test suite: %s", name)
+			})
 		}
-	}
+	})
 }
