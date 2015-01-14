@@ -316,13 +316,15 @@ func matchExpr(input *simplejson.Json, grammar *simplejson.Json, diag bool) bool
 	}
 	mtype, err := grammar.Map()
 	if err == nil {
-		schema, err := gojsonschema.NewJsonSchemaDocument(mtype)
+		schemaLoader := gojsonschema.NewGoLoader(mtype)
+		documentLoader := gojsonschema.NewGoLoader(input)
+
+		result, err := gojsonschema.Validate(schemaLoader, documentLoader)
 		if err != nil {
-			log.Printf("Invalid schema (%v) in grammar: %v", mtype, err)
+			log.Printf("Validation error: %v", err)
 
 			return false
 		}
-		result := schema.Validate(input)
 
 		for _, e := range result.Errors() {
 			log.Printf("  JSON Schema validation failed because: %s", e)
