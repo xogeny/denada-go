@@ -116,7 +116,7 @@ func (e ElementList) Equals(o ElementList) error {
 // provided.  It returns nil if it cannot find a match (or it finds multiple matches),
 // otherwise it returns the value associated with that declaration.
 func (e ElementList) GetValue(rulename string) *simplejson.Json {
-	elems := e.OfRule(rulename, true)
+	elems := e.AllElements().OfRule(rulename, true)
 	if len(elems) != 1 {
 		return nil
 	}
