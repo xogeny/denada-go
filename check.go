@@ -103,12 +103,13 @@ func CheckContents(input ElementList, grammar ElementList, diag bool,
 				// If not, then choose this match.  This implies that the first
 				// rule to match is the one that is chosen
 				if in.rule == "" {
-					// If not, indicate what rule this input matched
-					if diag {
-						log.Printf("%sInput %s matched %s", prefix, in.String(), rule.Name)
-					}
 					in.rulepath = path
 					in.rule = rule.Name
+					// If not, indicate what rule this input matched
+					if diag {
+						log.Printf("%sInput %s matched %s (path: %s)",
+							prefix, in.String(), rule.Name, in.rulepath)
+					}
 				}
 			} else {
 				if diag {
