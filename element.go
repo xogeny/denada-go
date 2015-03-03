@@ -58,8 +58,8 @@ func (e Element) HasQualifiers(quals ...string) bool {
 	return true
 }
 
-func (e Element) Unparse() string {
-	return UnparseElement(e)
+func (e Element) Unparse(rules bool) string {
+	return UnparseElement(e, rules)
 }
 
 func (e Element) Clone() *Element {

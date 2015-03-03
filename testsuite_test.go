@@ -17,7 +17,7 @@ func ReparseFile(name string) error {
 		return err
 	}
 
-	str := Unparse(elems)
+	str := Unparse(elems, false)
 
 	relems, err := ParseString(str)
 	if err != nil {

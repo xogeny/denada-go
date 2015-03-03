@@ -11,7 +11,7 @@ type Case1 struct {
 		Label string `dnd:"mod"`
 		Units string `dnd:"mod"`
 		Value int    `dnd:"value"`
-	} `dndrule:"Real*",dndquals:"Real"`
+	} `dndrule:"Real*" dndquals:"Real"`
 	Groups []struct {
 		Named    string  `dnd:"name"`
 		Label    string  `dnd:"mod"`
@@ -49,7 +49,7 @@ func Test_MarshalCase1(t *testing.T) {
 
 	c := Case1{}
 	elems, err := Marshal(c)
-	fmt.Printf("%s\n", Unparse(elems))
+	fmt.Printf("%s\n", Unparse(elems, false))
 	Expect(err).To(BeNil())
 	Expect(len(elems)).To(Equal(2))
 }
